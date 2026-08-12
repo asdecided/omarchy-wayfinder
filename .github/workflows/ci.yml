@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate manifest and package
+        run: node scripts/validate.mjs
+      - name: Test presentation model
+        run: node test/model.test.mjs
+      - name: Check install and removal scripts
+        run: bash -n install.sh uninstall.sh
