@@ -33,18 +33,34 @@ for (const required of ["README.md", "LICENSE", "NOTICE", "Model.js", "RouteMark
 const service = await readFile(path.join(root, "Service.qml"), "utf8");
 const widget = await readFile(path.join(root, "BarWidget.qml"), "utf8");
 const installer = await readFile(path.join(root, "install.sh"), "utf8");
+const uninstaller = await readFile(path.join(root, "uninstall.sh"), "utf8");
 const readme = await readFile(path.join(root, "README.md"), "utf8");
 assert.ok(service.includes("wayfinder-router.service"));
 assert.ok(service.includes("/healthz"));
 assert.ok(widget.includes(manifest.id));
 assert.ok(!service.match(/api[_-]?key\s*[:=]\s*["'][^"']+/i), "QML must not contain an API key");
 
-const revisionMatch = installer.match(/^wayfinder_rev="([0-9a-f]{40})"$/m);
-assert.ok(revisionMatch, "installer must pin WayfinderRouter to a full commit SHA");
-assert.ok(installer.includes('--rev "$wayfinder_rev"'), "cargo install must use the pinned revision");
+const versionMatch = installer.match(/^router_version="(\d{4}\.\d+\.\d+)"$/m);
+assert.ok(versionMatch, "installer must pin a Router CalVer release");
 assert.ok(
-  readme.includes(`git checkout --detach ${revisionMatch[1]}`),
-  "workspace instructions must use the installer revision"
+  readme.includes(`router-v${versionMatch[1]}`),
+  "README must identify the pinned Router release"
+);
+
+for (const architecture of ["x86_64", "aarch64"]) {
+  const digest = installer.match(new RegExp(`^router_sha256_${architecture}="([0-9a-f]{64})"$`, "m"));
+  assert.ok(digest, `installer must pin the ${architecture} archive digest`);
+}
+
+assert.ok(installer.includes("sha256sum --check --strict"), "installer must verify the archive digest");
+assert.ok(installer.includes("--proto '=https'"), "installer must restrict release downloads to HTTPS");
+assert.ok(!installer.includes("cargo install"), "native installation must not require Cargo");
+assert.ok(installer.includes("binary_sha256="), "installer must record installed-binary provenance");
+assert.ok(uninstaller.includes("--remove-owned-router"), "uninstaller must require an explicit binary-removal flag");
+assert.ok(uninstaller.includes("current_binary_sha256"), "uninstaller must verify binary ownership by digest");
+assert.ok(
+  readme.includes("An existing\n`wayfinder-router` executable is never replaced."),
+  "README must document existing-binary ownership"
 );
 
 console.log(`validated ${manifest.id} ${manifest.version}`);

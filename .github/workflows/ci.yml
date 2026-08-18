@@ -20,5 +20,7 @@ jobs:
         run: node scripts/validate.mjs
       - name: Test presentation model
         run: node test/model.test.mjs
+      - name: Test pinned native Router installation
+        run: bash test/install.test.sh
       - name: Check install and removal scripts
         run: bash -n install.sh uninstall.sh

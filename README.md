@@ -12,9 +12,9 @@ shell does not interrupt requests.
 ## Requirements
 
 - Omarchy Quattro with third-party plugin support.
-- `curl`, `systemd --user`, and `wl-copy` (provided by a standard Omarchy
-  installation).
-- Rust 1.85 or later when building `wayfinder-router` from source.
+- An x86_64 or ARM64 glibc-based Linux system.
+- `curl`, `tar`, `sha256sum`, `systemd --user`, and `wl-copy` (provided by a
+  standard Omarchy installation).
 
 The plugin never stores provider credentials. It reads only the gateway's
 prompt-free local status surfaces.
@@ -27,29 +27,24 @@ cd ~/.config/omarchy/plugins/io.github.asdecided.wayfinder
 ./install.sh
 ```
 
-The installer builds the Rust CLI when Cargo is available and the binary is
-missing, rescans plugins, and enables the widget. It does not create a gateway
-configuration or provider credential.
+When the Router is missing, the installer downloads the native
+`router-v2026.8.0` archive for the current architecture and verifies its pinned
+SHA-256 digest before extraction. It does not require Rust or Cargo. An existing
+`wayfinder-router` executable is never replaced.
+
+The installer rescans plugins and enables the widget. It does not start the
+Router service, create a gateway configuration, or add a provider credential.
 
 Open the Wayfinder bar item and choose **Install service**. The existing CLI
 writes and starts `~/.config/systemd/user/wayfinder-router.service` on the
 configured loopback address.
 
-## Install from the Wayfinder workspace
-
-Contributors working from a WayfinderRouter checkout can install the same
-plugin directly:
-
-```sh
-git clone https://github.com/asdecided/WayfinderRouter.git
-cd WayfinderRouter
-git checkout --detach 9874b08b466822ea6fd0c0875a88950521110997
-./integrations/omarchy-wayfinder/install.sh
-```
-
-The detached checkout matches the Router revision used by the standalone
-installer. Router upgrades are reviewed as explicit plugin changes before this
-pin moves.
+The Router binary is installed to `~/.local/bin` by default. Set
+`WAYFINDER_BIN_DIR` before running the installer when another user-owned binary
+directory is required. Router upgrades remain explicit plugin changes: the
+release version and both architecture digests are reviewed before these pins
+move. The installer records the exact release, target, archive digest, binary
+digest, and user-owned path for a binary that it installs.
 
 Omarchy clones third-party plugins disabled so their source can be reviewed
 before enablement. The script performs the explicit enable step.
@@ -98,11 +93,23 @@ applications may still use it. Remove that independently only when desired:
 wayfinder-router service uninstall
 ```
 
+The plugin also leaves the Router executable in place by default. To remove a
+binary that this plugin installed, use:
+
+```sh
+./uninstall.sh --remove-owned-router
+```
+
+Removal succeeds only when the recorded path is inside the current user's home
+directory and the executable still matches its installation digest. A missing,
+modified, symlinked, or independently installed Router is never deleted.
+
 ## Validate
 
 ```sh
 node scripts/validate.mjs
 node test/model.test.mjs
+bash test/install.test.sh
 bash -n install.sh uninstall.sh
 omarchy plugin validate  # when run on Omarchy Quattro
 ```
