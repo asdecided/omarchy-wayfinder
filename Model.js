@@ -89,7 +89,7 @@ function setupState(state) {
   if (!input.configValid) {
     return { ready: false, actionable: true, step: "repair", status: "Policy needs attention",
       title: "Repair the existing policy", action: "Recheck policy",
-      detail: "The existing policy was not changed. Fix it, then run the check again." }
+      detail: "Existing policies are never overwritten. Fix this one, then run the check again." }
   }
   if (!input.unitInstalled) {
     return { ready: false, actionable: true, step: "service", status: "Service not installed",
