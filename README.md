@@ -10,7 +10,7 @@ The plugin is the flagship product surface; the independently supervised
 disabling the Omarchy shell does not interrupt requests.
 
 Wayfinder is Omarchy-primary, not Omarchy-only. The portable Router and the
-governing [Omarchy-first strategy](https://github.com/asdecided/WayfinderRouter/pull/185)
+governing [Omarchy-first strategy](https://github.com/asdecided/WayfinderRouter/blob/main/decisions/WF-ADR-0073-omarchy-first-portable-core.md)
 live in `asdecided/WayfinderRouter`.
 
 ## Requirements
