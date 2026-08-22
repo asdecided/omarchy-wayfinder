@@ -21,6 +21,63 @@ assert.deepEqual(
 );
 assert.equal(model.health("not-json").valid, false);
 
+assert.deepEqual(
+  JSON.parse(JSON.stringify(model.doctor(JSON.stringify({
+    schema_version: "1",
+    ok: false,
+    config: "/home/tom/.config/wayfinder/wayfinder-router.toml",
+    destinations: 2,
+    missing_environment: ["OPENAI_API_KEY"],
+    gateway_reachable: false
+  })))),
+  {
+    valid: true,
+    ok: false,
+    config: "/home/tom/.config/wayfinder/wayfinder-router.toml",
+    destinations: 2,
+    missingEnvironment: ["OPENAI_API_KEY"],
+    gatewayReachable: false
+  }
+);
+assert.equal(model.doctor("not-json").valid, false);
+
+const setupBase = {
+  localEndpoint: true,
+  binaryInstalled: true,
+  configPath: "/home/tom/.config/wayfinder/wayfinder-router.toml",
+  configChecked: true,
+  configExists: false,
+  doctorChecked: false,
+  configValid: false,
+  unitInstalled: false,
+  systemdActive: false,
+  reachable: false,
+  missingEnvironment: []
+};
+assert.equal(model.setupState(setupBase).action, "Set up Wayfinder");
+assert.equal(model.setupState(setupBase).step, "policy");
+
+const existingInvalid = { ...setupBase, configExists: true, doctorChecked: true };
+assert.equal(model.setupState(existingInvalid).action, "Recheck policy");
+assert.match(model.setupState(existingInvalid).detail, /never overwritten/i);
+
+const serviceNeeded = {
+  ...existingInvalid,
+  configValid: true,
+  missingEnvironment: ["OPENAI_API_KEY"]
+};
+assert.equal(model.setupState(serviceNeeded).action, "Install service");
+assert.match(model.setupState(serviceNeeded).detail, /OPENAI_API_KEY/);
+
+const ready = {
+  ...serviceNeeded,
+  unitInstalled: true,
+  systemdActive: true,
+  reachable: true
+};
+assert.equal(model.setupState(ready).ready, true);
+assert.equal(model.setupState(ready).action, "Restart service");
+
 const parsedModels = model.models(JSON.stringify({
   models: [
     { name: "local", endpoint: "http://127.0.0.1:11434/v1", provider: "openai-compatible", model: "qwen", tier: "local", key_ok: true },

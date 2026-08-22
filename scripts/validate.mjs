@@ -35,9 +35,15 @@ const widget = await readFile(path.join(root, "BarWidget.qml"), "utf8");
 const installer = await readFile(path.join(root, "install.sh"), "utf8");
 const uninstaller = await readFile(path.join(root, "uninstall.sh"), "utf8");
 const readme = await readFile(path.join(root, "README.md"), "utf8");
+const model = await readFile(path.join(root, "Model.js"), "utf8");
 assert.ok(service.includes("wayfinder-router.service"));
 assert.ok(service.includes("/healthz"));
+assert.ok(service.includes('"init", "--preset", "local", "--path"'));
+assert.ok(service.includes('"doctor", "--config"'));
+assert.ok(service.includes("effectiveConfigPath"));
+assert.ok(model.includes("function setupState(state)"));
 assert.ok(widget.includes(manifest.id));
+assert.ok(widget.includes("FIRST RUN"));
 assert.ok(!service.match(/api[_-]?key\s*[:=]\s*["'][^"']+/i), "QML must not contain an API key");
 
 const versionMatch = installer.match(/^router_version="(\d{4}\.\d+\.\d+)"$/m);
@@ -55,6 +61,7 @@ for (const architecture of ["x86_64", "aarch64"]) {
 assert.ok(installer.includes("sha256sum --check --strict"), "installer must verify the archive digest");
 assert.ok(installer.includes("--proto '=https'"), "installer must restrict release downloads to HTTPS");
 assert.ok(!installer.includes("cargo install"), "native installation must not require Cargo");
+assert.ok(!service.includes("bash -lc \"wayfinder-router init"), "setup arguments must not use shell interpolation");
 assert.ok(installer.includes("binary_sha256="), "installer must record installed-binary provenance");
 assert.ok(uninstaller.includes("--remove-owned-router"), "uninstaller must require an explicit binary-removal flag");
 assert.ok(uninstaller.includes("current_binary_sha256"), "uninstaller must verify binary ownership by digest");

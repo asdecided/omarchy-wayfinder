@@ -39,9 +39,21 @@ SHA-256 digest before extraction. It does not require Rust or Cargo. An existing
 The installer rescans plugins and enables the widget. It does not start the
 Router service, create a gateway configuration, or add a provider credential.
 
-Open the Wayfinder bar item and choose **Install service**. The existing CLI
-writes and starts `~/.config/systemd/user/wayfinder-router.service` on the
-configured loopback address.
+Open the Wayfinder bar item and choose **Set up Wayfinder**. The explicit,
+resumable first-run flow:
+
+1. checks for an existing policy without changing it;
+2. creates a no-clobber `local` policy at
+   `${XDG_CONFIG_HOME:-$HOME/.config}/wayfinder/wayfinder-router.toml` only
+   when no policy exists;
+3. validates that policy with `wayfinder-router doctor --json`; and
+4. installs and starts `~/.config/systemd/user/wayfinder-router.service`
+   through the native Router CLI.
+
+An existing policy is never overwritten. Invalid policy stops setup with a
+specific error and can be rechecked after repair. Missing provider environment
+is listed by variable name but does not prevent the local service from being
+installed. Interrupted setup is safe to resume from the bar.
 
 The Router binary is installed to `~/.local/bin` by default. Set
 `WAYFINDER_BIN_DIR` before running the installer when another user-owned binary
@@ -78,7 +90,10 @@ boundary referenced by the Wayfinder configuration.
 - Left click: open or close the status panel.
 - Right click: refresh status.
 - Middle click: copy the endpoint.
-- **Install / Start / Restart service**: manage the local systemd user unit.
+- **Set up Wayfinder**: create and validate a no-clobber local policy, then
+  install the systemd user service.
+- **Check policy / Install / Start / Restart service**: resume from the next
+  incomplete or failed step without repeating successful work.
 
 When operator endpoints are protected by OIDC, the plugin continues to show
 health but hides unavailable model, recent-route, and savings metadata. It does
