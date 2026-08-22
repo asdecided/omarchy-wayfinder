@@ -24,6 +24,94 @@ function parsedObject(raw) {
   }
 }
 
+function doctor(raw) {
+  var value = parsedObject(raw)
+  if (!value || String(value.schema_version || "") !== "1"
+      || typeof value.ok !== "boolean" || !isFinite(Number(value.destinations))) {
+    return {
+      valid: false,
+      ok: false,
+      config: "",
+      destinations: 0,
+      missingEnvironment: [],
+      gatewayReachable: false
+    }
+  }
+  return {
+    valid: true,
+    ok: value.ok === true,
+    config: String(value.config || ""),
+    destinations: Math.max(0, Number(value.destinations || 0)),
+    missingEnvironment: Array.isArray(value.missing_environment)
+      ? value.missing_environment.map(String) : [],
+    gatewayReachable: value.gateway_reachable === true
+  }
+}
+
+function setupState(state) {
+  var input = state || {}
+  var missing = Array.isArray(input.missingEnvironment)
+    ? input.missingEnvironment.map(String) : []
+  var missingDetail = missing.length > 0
+    ? " Missing environment: " + missing.join(", ") + "."
+    : ""
+
+  if (!input.localEndpoint) {
+    return { ready: false, actionable: false, step: "remote", status: "",
+      title: "Remote endpoint", action: "Remote endpoint",
+      detail: "This endpoint is observed but not managed." }
+  }
+  if (!input.binaryInstalled) {
+    return { ready: false, actionable: false, step: "binary", status: "Router not installed",
+      title: "Install the Router", action: "Router missing",
+      detail: "Run the plugin installer to add the checksum-verified native Router." }
+  }
+  if (String(input.configPath || "") === "") {
+    return { ready: false, actionable: false, step: "path", status: "Preparing setup",
+      title: "Resolve the policy path", action: "Preparing…",
+      detail: "Wayfinder is resolving a user-owned configuration path." }
+  }
+  if (!input.configChecked) {
+    return { ready: false, actionable: false, step: "probe", status: "Checking setup",
+      title: "Check existing setup", action: "Checking…",
+      detail: "Wayfinder is checking for an existing policy without changing it." }
+  }
+  if (!input.configExists) {
+    return { ready: false, actionable: true, step: "policy", status: "Setup required",
+      title: "Create a local policy", action: "Set up Wayfinder",
+      detail: "Creates a no-clobber local policy, validates it, and installs the user service." }
+  }
+  if (!input.doctorChecked) {
+    return { ready: false, actionable: true, step: "doctor", status: "Checking policy",
+      title: "Validate the policy", action: "Check policy",
+      detail: "Runs the native doctor against the existing policy before service installation." }
+  }
+  if (!input.configValid) {
+    return { ready: false, actionable: true, step: "repair", status: "Policy needs attention",
+      title: "Repair the existing policy", action: "Recheck policy",
+      detail: "The existing policy was not changed. Fix it, then run the check again." }
+  }
+  if (!input.unitInstalled) {
+    return { ready: false, actionable: true, step: "service", status: "Service not installed",
+      title: "Install the user service", action: "Install service",
+      detail: "The policy is valid." + missingDetail
+        + " Installation uses the reviewed systemd user-service boundary." }
+  }
+  if (!input.systemdActive) {
+    return { ready: true, actionable: true, step: "start", status: "",
+      title: "Start the Router", action: "Start service",
+      detail: "The service is installed but stopped." + missingDetail }
+  }
+  if (!input.reachable) {
+    return { ready: true, actionable: true, step: "restart", status: "",
+      title: "Recover the Router", action: "Restart service",
+      detail: "The service is active but its loopback gateway is not reachable." + missingDetail }
+  }
+  return { ready: true, actionable: true, step: "ready", status: "",
+    title: "Wayfinder is ready", action: "Restart service",
+    detail: missingDetail.trim() }
+}
+
 function health(raw) {
   var value = parsedObject(raw)
   if (!value || (value.status !== "ok" && value.status !== "degraded")) {

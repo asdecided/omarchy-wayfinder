@@ -133,4 +133,4 @@ fi
 
 printf '%s\n' \
   "Wayfinder is available in the Omarchy bar." \
-  "Open it and choose Install service to start the localhost gateway."
+  "Open it and choose Set up Wayfinder to create a local policy and start the user service."

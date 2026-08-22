@@ -42,8 +42,7 @@ BarWidget {
 
   function primaryAction() {
     if (!wayfinder || !wayfinder.binaryInstalled || !wayfinder.localEndpoint) return
-    if (!wayfinder.unitInstalled) wayfinder.installService()
-    else wayfinder.startOrRestartService()
+    wayfinder.beginSetup()
   }
 
   function modelFor(name) {
@@ -65,6 +64,7 @@ BarWidget {
     if (wayfinder.actionMessage !== "") return wayfinder.actionMessage
     if (!wayfinder.localEndpoint) return "This remote endpoint is observed but not managed."
     if (!wayfinder.binaryInstalled) return "Install the Rust router to activate this control surface."
+    if (wayfinder.setupDetail !== "") return wayfinder.setupDetail
     if (wayfinder.operatorError !== "" && wayfinder.reachable) return wayfinder.operatorError
     return ""
   }
@@ -169,6 +169,38 @@ BarWidget {
       }
 
       PanelSeparator { foreground: root.foreground }
+
+      Column {
+        width: parent.width
+        visible: !!root.wayfinder && !root.wayfinder.setupState.ready
+        spacing: Style.space(4)
+
+        Text {
+          text: "FIRST RUN"
+          color: Qt.darker(root.foreground, 1.5)
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.caption
+          font.bold: true
+          font.letterSpacing: 1.1
+        }
+        Text {
+          width: parent.width
+          text: root.wayfinder ? root.wayfinder.setupState.title : "Check setup"
+          color: root.foreground
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.subtitle
+          font.bold: true
+          wrapMode: Text.Wrap
+        }
+        Text {
+          width: parent.width
+          text: root.wayfinder ? root.wayfinder.effectiveConfigPath : ""
+          color: Qt.darker(root.foreground, 1.55)
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.caption
+          elide: Text.ElideMiddle
+        }
+      }
 
       Column {
         width: parent.width
@@ -383,7 +415,8 @@ BarWidget {
           foreground: root.foreground
           bordered: true
           enabled: !!root.wayfinder && root.wayfinder.binaryInstalled
-            && root.wayfinder.localEndpoint && !root.wayfinder.busy
+            && root.wayfinder.localEndpoint && root.wayfinder.effectiveConfigPath !== ""
+            && root.wayfinder.setupState.actionable && !root.wayfinder.busy
           onClicked: root.primaryAction()
         }
 
