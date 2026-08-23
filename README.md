@@ -145,6 +145,12 @@ contract under test is Codex's client-round-tripped coding tools. The plugin's
 downloadable Router version and checksums move only in the later coordinated
 release PR.
 
+The harness defaults to Codex's `read-only` sandbox. GitHub's hosted runner
+cannot create the Bubblewrap loopback interface used by that sandbox, so CI
+sets `WAYFINDER_CODEX_SANDBOX=danger-full-access` for the fixed, no-write
+`printf` command only. Run the default locally on Omarchy to cover the native
+sandbox as well as the Router transport.
+
 ## License
 
 Apache-2.0. See `LICENSE`.

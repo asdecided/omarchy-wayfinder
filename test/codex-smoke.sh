@@ -7,6 +7,7 @@ codex_bin="${CODEX_BIN:-$(command -v codex || true)}"
 router_port="${WAYFINDER_SMOKE_ROUTER_PORT:-18088}"
 provider_port="${WAYFINDER_SMOKE_PROVIDER_PORT:-18089}"
 smoke_timeout="${WAYFINDER_SMOKE_TIMEOUT:-90}"
+codex_sandbox="${WAYFINDER_CODEX_SANDBOX:-read-only}"
 smoke_root="$(mktemp -d "${TMPDIR:-/tmp}/wayfinder-codex-smoke.XXXXXX")"
 router_pid=""
 provider_pid=""
@@ -53,6 +54,10 @@ done
   printf 'Invalid smoke-test timeout: %s\n' "$smoke_timeout" >&2
   exit 1
 }
+if [[ "$codex_sandbox" != "read-only" && "$codex_sandbox" != "danger-full-access" ]]; then
+  printf 'Invalid Codex smoke sandbox: %s\n' "$codex_sandbox" >&2
+  exit 1
+fi
 if [[ "$router_port" == "$provider_port" ]]; then
   printf '%s\n' "Router and provider smoke ports must differ." >&2
   exit 1
@@ -140,7 +145,7 @@ if ! CODEX_HOME="$smoke_root/codex-home" timeout --signal=TERM "${smoke_timeout}
   --strict-config \
   --ephemeral \
   --skip-git-repo-check \
-  --sandbox read-only \
+  --sandbox "$codex_sandbox" \
   --cd "$smoke_root/workspace" \
   --color never \
   --json \
