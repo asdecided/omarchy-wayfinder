@@ -59,8 +59,8 @@ assert.ok(workflow.includes("compatibility.json"), "CI must read the Omarchy com
 
 assert.equal(compatibility.lifecycle.freshInstall, "release-gated");
 assert.equal(compatibility.lifecycle.existingRouterNoClobber, "release-gated");
-assert.equal(compatibility.lifecycle.routerUpgrade, "blocked");
-assert.equal(compatibility.lifecycle.routerRollback, "blocked");
+assert.equal(compatibility.lifecycle.routerUpgrade, "contract-validated");
+assert.equal(compatibility.lifecycle.routerRollback, "contract-validated");
 
 for (const value of [
   compatibility.omarchy.commit,
@@ -75,7 +75,7 @@ for (const value of [
 
 assert.ok(readme.includes("docs/compatibility.md"));
 assert.ok(readme.includes("docs/troubleshooting.md"));
-assert.ok(troubleshooting.includes("Router upgrade and rollback are not release-ready"));
+assert.ok(troubleshooting.includes("Upgrade or roll back a plugin-owned Router"));
 assert.ok(troubleshooting.includes("journalctl --user -u wayfinder-router.service"));
 
 console.log(

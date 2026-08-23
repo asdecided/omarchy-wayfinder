@@ -42,7 +42,7 @@
     "existingRouterNoClobber": "release-gated",
     "pluginSourceUpdate": "documented",
     "pluginSourceRollback": "documented",
-    "routerUpgrade": "blocked",
-    "routerRollback": "blocked"
+    "routerUpgrade": "contract-validated",
+    "routerRollback": "contract-validated"
   }
 }

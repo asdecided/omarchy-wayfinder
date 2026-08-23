@@ -31,11 +31,11 @@ The official Omarchy manifest validator is contract evidence, not a substitute f
 | Install with an existing Router | Release-gated | Uses the existing executable and does not record or replace it |
 | Plugin source update | Documented | Omarchy shows the Git diff and fast-forwards the plugin checkout |
 | Plugin source rollback | Documented | Disable, select the previously reviewed source commit, validate, then re-enable |
-| Router upgrade | Blocked | `install.sh` never replaces an existing Router, including one it installed |
-| Router rollback | Blocked | No reviewed atomic replacement and last-known-good binary contract exists yet |
+| Router upgrade | Contract-validated | Replaces only a digest-matched plugin-owned on-disk binary through a recoverable atomic promotion; service restart remains explicit |
+| Router rollback | Contract-validated | Swaps to the verified last-known-good on-disk binary and retains the displaced version as the next rollback target |
 | Project profiles | Unavailable in the install pin | The `2026.8.0` Router reports the capability as unavailable; the panel fails closed |
 
-Router upgrade and rollback remain release blockers. A later isolated change must add atomic, ownership-checked replacement, preserve a verified last-known-good binary, test interrupted promotion, and prove rollback before the Router pin moves.
+The lifecycle harness proves ownership refusal, atomic promotion, last-known-good retention, rollback, and recovery both before and after the promotion rename. Upgrade and rollback remain short of **release-gated** until a later coordinated candidate moves the real Router pin and exercises two checksum-verified release archives end to end.
 
 ## Pin movement rule
 
