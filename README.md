@@ -129,9 +129,18 @@ modified, symlinked, or independently installed Router is never deleted.
 node scripts/validate.mjs
 node test/model.test.mjs
 bash test/install.test.sh
+bash test/codex-smoke.sh  # requires Codex 0.149.0 and a candidate Router binary
 bash -n install.sh uninstall.sh
 omarchy plugin validate  # when run on Omarchy Quattro
 ```
+
+The Codex smoke is a release-gate harness, not an installer pin. Set
+`WAYFINDER_ROUTER_BIN` to a candidate Router build; it starts a bounded local
+provider, runs the real Codex CLI through Wayfinder, requires Codex to execute
+one read-only shell tool, and verifies that the tool result returns before the
+final response. CI pins both the Codex contract version and the reviewed Router
+merge commit. The plugin's downloadable Router version and checksums move only
+in the later coordinated release PR.
 
 ## License
 

@@ -24,3 +24,24 @@ jobs:
         run: bash test/install.test.sh
       - name: Check install and removal scripts
         run: bash -n install.sh uninstall.sh
+
+  codex-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: asdecided/WayfinderRouter
+          ref: 782c4cf12a6719349a246882c24caeb4447e6831
+          path: .router-source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Codex CLI contract version
+        run: npm install --global @openai/codex@0.149.0
+      - name: Build the candidate Router contract
+        run: cargo build --locked --manifest-path .router-source/rust/Cargo.toml --bin wayfinder-router
+      - name: Run a real Codex tool round-trip
+        env:
+          WAYFINDER_ROUTER_BIN: ${{ github.workspace }}/.router-source/rust/target/debug/wayfinder-router
+        run: bash test/codex-smoke.sh
