@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,6 +36,8 @@ const installer = await readFile(path.join(root, "install.sh"), "utf8");
 const uninstaller = await readFile(path.join(root, "uninstall.sh"), "utf8");
 const readme = await readFile(path.join(root, "README.md"), "utf8");
 const model = await readFile(path.join(root, "Model.js"), "utf8");
+const installerStat = await stat(path.join(root, "install.sh"));
+assert.notEqual(installerStat.mode & 0o111, 0, "install.sh must remain directly executable");
 assert.ok(service.includes("wayfinder-router.service"));
 assert.ok(service.includes("/healthz"));
 assert.ok(service.includes('"init", "--preset", "local", "--path"'));
