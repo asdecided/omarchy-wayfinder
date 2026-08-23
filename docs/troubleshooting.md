@@ -89,8 +89,34 @@ omarchy-shell shell rescanPlugins
 
 Replace `PREVIOUS_REVIEWED_COMMIT` with the full commit recorded before the update. To return to the normal update lane later, switch back to the repository's tracked default branch, validate the diff, and run `omarchy plugin update` again.
 
-## Router upgrade and rollback are not release-ready
+## Upgrade or roll back a plugin-owned Router
 
-The current installer never overwrites an existing Router. That protects independently owned binaries, but it also means the current source does not claim Router upgrade or rollback. Do not manually replace the binary and then expect plugin ownership checks to remove it: a changed digest is deliberately refused.
+After a reviewed plugin update moves the Router release and archive digests, explicitly promote the new pin:
 
-The release remains blocked until an isolated change proves atomic owned-binary promotion, last-known-good retention, interrupted-upgrade recovery, and checksum-verified rollback. Removing the plugin or disabling the widget does not stop the independently supervised Router service.
+```sh
+./install.sh --upgrade-router
+```
+
+Upgrade is allowed only when the active binary and provenance were created by this plugin and still match. The candidate archive is checksum-verified and executed before promotion. The previous binary and its provenance become the last-known-good pair.
+
+Promotion replaces the on-disk executable. Restart `wayfinder-router.service` from the Wayfinder panel after a successful upgrade so the supervised process runs that binary.
+
+To swap back to that verified pair:
+
+```sh
+./install.sh --rollback-router
+```
+
+Rollback retains the displaced version as the next last-known-good target, so the operation is reversible. A missing, modified, linked, independently installed, or provenance-mismatched binary stops both actions without replacement.
+
+Restart the service after rollback as well. If the promoted service cannot start, roll back the binary, restart again, and inspect the bounded user journal command from the first section.
+
+Promotion intent is recorded before the atomic rename. The next installer action automatically resolves an interrupted transaction by comparing the active binary with both reviewed digests. To request only that recovery step, run:
+
+```sh
+./install.sh --recover-router
+```
+
+Do not edit or delete transaction/provenance files during recovery. If the active digest matches neither side, Wayfinder fails closed and requires manual inspection. Removing the plugin or disabling the widget does not stop the independently supervised Router service.
+
+The lifecycle is contract-validated with synthetic versioned binaries. It becomes release-gated only when a coordinated release moves the real Router pin and exercises upgrade and rollback between two checksum-verified archives.
