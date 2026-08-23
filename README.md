@@ -2,8 +2,8 @@
 
 Wayfinder is the model router built for Omarchy. One plugin installs the native
 Rust Router, gives supported coding agents a shared local endpoint, and exposes
-health, recent routes, local-versus-hosted distribution, model readiness, and
-savings in the Omarchy bar.
+health, delivery receipts, local-versus-hosted distribution, model readiness,
+and savings in the Omarchy bar.
 
 The plugin is the flagship product surface; the independently supervised
 `wayfinder-router` process remains the only routing authority. Reloading or
@@ -134,6 +134,14 @@ real-client smoke scenarios yet.
 When operator endpoints are protected by OIDC, the plugin continues to show
 health but hides unavailable model, recent-route, and savings metadata. It does
 not ask for or persist an operator token.
+
+Each recent route shows the destination that actually served it, its execution
+boundary, resolved policy profile, routing mode and score, delivery outcome,
+and observed HTTP status. A failed receipt includes direct remediation based on
+the Router's stable error type. Selected-versus-served failover is called out
+explicitly; the plugin does not infer provider locality or duplicate routing
+policy. These prompt-free receipts are the Router's bounded in-memory state,
+not a durable audit log.
 
 ## Remove
 

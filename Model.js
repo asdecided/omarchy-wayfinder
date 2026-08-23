@@ -157,6 +157,15 @@ function recent(raw) {
       model: String(item.model || "unknown"),
       score: Number(item.score || 0),
       mode: String(item.mode || "scored"),
+      policyVersion: String(item.policy_version || ""),
+      snapshotId: String(item.snapshot_id || ""),
+      policyProfile: String(item.policy_profile || ""),
+      servedBy: String(item.served_by || ""),
+      executionBoundary: String(item.execution_boundary || ""),
+      outcome: String(item.outcome || ""),
+      httpStatus: item.http_status !== null && item.http_status !== undefined
+        && isFinite(Number(item.http_status)) ? Number(item.http_status) : null,
+      errorType: String(item.error_type || ""),
       timestamp: Number(item.ts || 0),
       saved: item.cost && isFinite(Number(item.cost.saved)) ? Number(item.cost.saved) : null,
       unit: item.cost ? String(item.cost.unit || "") : "",
@@ -170,6 +179,110 @@ function recent(raw) {
     byModel: value.by_model && typeof value.by_model === "object" ? value.by_model : {},
     recent: entries
   }
+}
+
+function routeTitle(entry) {
+  if (!entry) return "unknown"
+  return shortModel(String(entry.servedBy || entry.model || "unknown"))
+}
+
+function routeReason(entry) {
+  if (!entry) return "Route details unavailable"
+  var mode = String(entry.mode || "")
+  var reason = ""
+  if (mode === "scored") reason = "Automatic · score " + fixed(entry.score, 2)
+  else if (mode === "pinned") reason = "Pinned by request"
+  else if (mode === "slash-pinned") reason = "Pinned by route"
+  else if (mode !== "") reason = mode.replace(/[-_]+/g, " ")
+  else reason = "Routing mode unavailable"
+
+  var selected = String(entry.model || "")
+  var served = String(entry.servedBy || "")
+  if (selected !== "" && served !== "" && selected !== served) {
+    reason = "Selected " + shortModel(selected) + " · " + reason
+  }
+  return reason
+}
+
+function boundaryLabel(value) {
+  var boundary = String(value || "")
+  if (boundary === "on-device") return "ON DEVICE"
+  if (boundary === "local-network") return "LOCAL NET"
+  if (boundary === "hosted") return "HOSTED"
+  return "BOUNDARY ?"
+}
+
+function outcomeLabel(value) {
+  var outcome = String(value || "")
+  if (outcome === "succeeded") return "DONE"
+  if (outcome === "streaming") return "LIVE"
+  if (outcome === "failed") return "FAILED"
+  if (outcome === "cancelled") return "CANCELLED"
+  if (outcome === "cache-hit") return "CACHE"
+  return "PENDING"
+}
+
+function receiptDetail(entry) {
+  if (!entry) return ""
+  return receiptContext(entry) + " · " + routeReason(entry)
+}
+
+function receiptContext(entry) {
+  if (!entry) return ""
+  var parts = [boundaryLabel(entry.executionBoundary)]
+  if (String(entry.policyProfile || "") !== "") parts.push("PROFILE " + entry.policyProfile)
+  return parts.join(" · ")
+}
+
+function receiptNeedsAttention(entry) {
+  return !!entry && String(entry.outcome || "") === "failed"
+}
+
+function receiptRemediation(entry) {
+  if (!entry) return ""
+  var outcome = String(entry.outcome || "")
+  if (outcome === "cancelled") return "Client disconnected before completion."
+  if (outcome !== "failed") return ""
+
+  var errorType = String(entry.errorType || "")
+  var httpStatus = Number(entry.httpStatus)
+  if (errorType === "wayfinder_router_unauthorized" || httpStatus === 401 || httpStatus === 403) {
+    return "Check the provider credential."
+  }
+  if (errorType === "wayfinder_router_rate_limited"
+      || errorType === "wayfinder_router_usage_limited"
+      || errorType === "wayfinder_router_budget_exhausted" || httpStatus === 429) {
+    return "Check provider limits or budget, then retry."
+  }
+  if (errorType === "wayfinder_router_circuit_open") {
+    return "The provider circuit is open; retry shortly."
+  }
+  if (errorType === "wayfinder_router_not_ready"
+      || errorType === "wayfinder_router_misconfigured"
+      || errorType === "wayfinder_router_destination_ineligible"
+      || errorType === "wayfinder_router_offline_unavailable") {
+    return "Run wayfinder-router doctor and repair the policy."
+  }
+  if (errorType === "wayfinder_router_busy"
+      || errorType === "wayfinder_router_overloaded") {
+    return "The Router is busy; retry shortly."
+  }
+  if (errorType === "wayfinder_router_state_error") {
+    return "Restart the Router, then run wayfinder-router doctor."
+  }
+  if (errorType === "wayfinder_router_request_too_large"
+      || errorType === "wayfinder_router_token_bound_required") {
+    return "Reduce the request context or configure a token limit."
+  }
+  return "Retry, then inspect Router logs if it repeats."
+}
+
+function latestActionableReceipt(entries) {
+  var values = Array.isArray(entries) ? entries : []
+  for (var i = 0; i < values.length; i++) {
+    if (receiptNeedsAttention(values[i])) return values[i]
+  }
+  return null
 }
 
 function savings(raw) {
