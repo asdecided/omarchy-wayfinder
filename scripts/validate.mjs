@@ -41,14 +41,32 @@ assert.ok(service.includes("/healthz"));
 assert.ok(service.includes('"init", "--preset", "local", "--path"'));
 assert.ok(service.includes('"doctor", "--config"'));
 assert.ok(service.includes("effectiveConfigPath"));
+assert.ok(service.includes('"capabilities", "--json"'));
+assert.ok(service.includes('"project", "status", "--root"'));
+assert.ok(service.includes('"project", "setup", "--root"'));
+assert.ok(service.includes('"project", "rollback", "--root"'));
+assert.ok(service.includes('"--prompt-token", "--json"'));
+assert.ok(service.includes("stdinEnabled: true"));
+assert.ok(service.includes("projectActionProcess.write"));
 assert.ok(model.includes("function setupState(state)"));
+assert.ok(model.includes("function projectState(state)"));
+assert.ok(model.includes("function projectStatus(raw)"));
 assert.ok(model.includes("function receiptRemediation(entry)"));
 assert.ok(widget.includes(manifest.id));
 assert.ok(widget.includes("FIRST RUN"));
+assert.ok(widget.includes("PROJECT PROFILE"));
+assert.ok(widget.includes("password: true"));
+assert.ok(widget.includes("Confirm rollback"));
 assert.ok(widget.includes("Model.receiptContext(modelData)"));
 assert.ok(widget.includes("Model.routeReason(modelData)"));
 assert.ok(widget.includes("Model.receiptRemediation(root.actionableReceipt)"));
 assert.ok(!service.match(/api[_-]?key\s*[:=]\s*["'][^"']+/i), "QML must not contain an API key");
+assert.ok(!service.includes("WAYFINDER_PROJECT_TOKEN"), "QML must not read or persist the project token environment");
+
+const projectRootSetting = manifest.barWidget.schema.find(entry => entry.key === "projectRoot");
+assert.ok(projectRootSetting, "manifest must expose the repository root setting");
+assert.equal(projectRootSetting.type, "path");
+assert.equal(manifest.barWidget.defaults.projectRoot, "");
 
 const versionMatch = installer.match(/^router_version="(\d{4}\.\d+\.\d+)"$/m);
 assert.ok(versionMatch, "installer must pin a Router CalVer release");
@@ -73,5 +91,7 @@ assert.ok(
   readme.includes("An existing\n`wayfinder-router` executable is never replaced."),
   "README must document existing-binary ownership"
 );
+assert.ok(readme.includes("Project profiles"), "README must document project profiles");
+assert.ok(readme.includes("stdin"), "README must document the project-token stdin boundary");
 
 console.log(`validated ${manifest.id} ${manifest.version}`);

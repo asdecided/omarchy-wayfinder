@@ -48,6 +48,126 @@ function doctor(raw) {
   }
 }
 
+function capabilities(raw) {
+  var value = parsedObject(raw)
+  var nativeCommands = value && Array.isArray(value.native_commands)
+    ? value.native_commands.map(String) : []
+  if (!value || String(value.schema_version || "") !== "1"
+      || String(value.implementation || "") === "" || !Array.isArray(value.native_commands)) {
+    return { valid: false, version: "", nativeCommands: [], projectSupported: false }
+  }
+  return {
+    valid: true,
+    version: String(value.version || ""),
+    nativeCommands: nativeCommands,
+    projectSupported: nativeCommands.indexOf("project setup") !== -1
+      && nativeCommands.indexOf("project status") !== -1
+      && nativeCommands.indexOf("project rollback") !== -1
+  }
+}
+
+function emptyProjectStatus() {
+  return {
+    valid: false,
+    status: "unknown",
+    canonicalRepository: "",
+    repositoryUrl: "",
+    repositoryRoot: "",
+    profileDirectory: "",
+    profileId: "",
+    workspaceId: "",
+    keyId: "",
+    owned: false,
+    tokenSource: "",
+    tokenMatches: null,
+    setupRequired: false,
+    profileModified: false
+  }
+}
+
+function projectStatus(raw) {
+  var value = parsedObject(raw)
+  if (!value || Number(value.schema_version) !== 1 || typeof value.status !== "string"
+      || typeof value.owned !== "boolean" || typeof value.setup_required !== "boolean"
+      || typeof value.profile_modified !== "boolean") {
+    return emptyProjectStatus()
+  }
+  return {
+    valid: true,
+    status: String(value.status),
+    canonicalRepository: String(value.canonical_repository || ""),
+    repositoryUrl: String(value.repository_url || ""),
+    repositoryRoot: String(value.repository_root || ""),
+    profileDirectory: String(value.profile_directory || ""),
+    profileId: String(value.profile_id || ""),
+    workspaceId: String(value.workspace_id || ""),
+    keyId: String(value.key_id || ""),
+    owned: value.owned === true,
+    tokenSource: String(value.token_source || ""),
+    tokenMatches: typeof value.token_matches === "boolean" ? value.token_matches : null,
+    setupRequired: value.setup_required === true,
+    profileModified: value.profile_modified === true
+  }
+}
+
+function projectState(state) {
+  var input = state || {}
+  var report = input.report && typeof input.report === "object"
+    ? input.report : emptyProjectStatus()
+  var error = String(input.error || "")
+  if (!input.configured) {
+    return { ready: false, actionable: false, step: "root", urgent: false,
+      status: "No repository selected", title: "Choose a repository",
+      action: "Choose project", detail: "Set a local repository root in the plugin settings." }
+  }
+  if (input.capabilityChecked && !input.supported) {
+    return { ready: false, actionable: false, step: "unsupported", urgent: true,
+      status: "Router update required", title: "Project profiles unavailable",
+      action: "Update Router", detail: "The installed Router does not advertise the project lifecycle contract." }
+  }
+  if (!input.capabilityChecked || !input.checked) {
+    return { ready: false, actionable: false, step: "checking", urgent: false,
+      status: "Checking repository", title: "Inspecting project context",
+      action: "Checking…", detail: "Wayfinder is resolving owned project state without changing the repository." }
+  }
+  if (error !== "" || !report.valid) {
+    return { ready: false, actionable: false, step: "error", urgent: true,
+      status: "Project needs attention", title: "Repository could not be inspected",
+      action: "Retry", detail: error || "The Router returned an invalid project status." }
+  }
+  if (report.setupRequired || !report.owned) {
+    return { ready: false, actionable: true, step: "setup", urgent: false,
+      status: "Project setup required", title: "Add a repository profile",
+      action: "Set up project",
+      detail: "Enter a token you keep. Only its SHA-256 hash is stored outside the repository." }
+  }
+  if (report.tokenMatches === false) {
+    return { ready: true, actionable: false, step: "ready", urgent: true,
+      status: "Project token mismatch", title: report.canonicalRepository || "Project profile active",
+      action: "Profile active", detail: "The loaded project token does not match this owned profile." }
+  }
+  var detail = report.profileModified
+    ? "The owned routing profile has transparent user changes."
+    : "The deterministic routing scaffold is unchanged."
+  if (report.tokenMatches === true) detail += " The project token matches."
+  else detail += " Supply the same token when launching a supported coding agent."
+  return { ready: true, actionable: false, step: "ready", urgent: false,
+    status: report.profileModified ? "Custom project profile" : "Project profile active",
+    title: report.canonicalRepository || "Project profile active",
+    action: "Profile active", detail: detail }
+}
+
+function projectError(raw) {
+  return String(raw || "")
+    .replace(/Wayfinder project token \(input is not persisted\):/g, "")
+    .replace(/\s+/g, " ").trim()
+}
+
+function validProjectToken(value) {
+  var token = String(value || "")
+  return token.length > 0 && token.length <= 512 && !/[\u0000-\u001f\u007f]/.test(token)
+}
+
 function setupState(state) {
   var input = state || {}
   var missing = Array.isArray(input.missingEnvironment)

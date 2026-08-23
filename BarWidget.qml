@@ -10,6 +10,7 @@ BarWidget {
 
   readonly property var wayfinder: bar && bar.shell ? bar.shell.serviceFor(moduleName) : null
   property bool popupOpen: false
+  property bool rollbackArmed: false
   property double nowMs: Date.now()
 
   readonly property color foreground: bar ? bar.foreground : Color.foreground
@@ -31,7 +32,11 @@ BarWidget {
     if (wayfinder) wayfinder.refresh()
   }
 
-  function close() { popupOpen = false }
+  function close() {
+    popupOpen = false
+    rollbackArmed = false
+    projectToken.text = ""
+  }
   function toggle() { popupOpen ? close() : open() }
   readonly property bool opened: popupOpen
 
@@ -44,6 +49,25 @@ BarWidget {
   function primaryAction() {
     if (!wayfinder || !wayfinder.binaryInstalled || !wayfinder.localEndpoint) return
     wayfinder.beginSetup()
+  }
+
+  function submitProjectToken() {
+    if (!wayfinder || !Model.validProjectToken(projectToken.text) || wayfinder.projectBusy) return
+    var token = projectToken.text
+    projectToken.text = ""
+    wayfinder.setupProject(token)
+  }
+
+  function requestProjectRollback() {
+    if (!wayfinder || wayfinder.projectBusy || !wayfinder.projectReport.owned) return
+    if (!rollbackArmed) {
+      rollbackArmed = true
+      rollbackReset.restart()
+      return
+    }
+    rollbackArmed = false
+    rollbackReset.stop()
+    wayfinder.rollbackProject()
   }
 
   function modelFor(name) {
@@ -74,6 +98,13 @@ BarWidget {
     return ""
   }
 
+  function projectDetail() {
+    if (!wayfinder) return ""
+    if (wayfinder.projectError !== "") return wayfinder.projectError
+    if (wayfinder.projectMessage !== "") return wayfinder.projectMessage
+    return wayfinder.projectState.detail
+  }
+
   onSettingsChanged: configureService()
   onWayfinderChanged: configureService()
   Component.onCompleted: Qt.callLater(configureService)
@@ -84,6 +115,14 @@ BarWidget {
     repeat: true
     triggeredOnStart: true
     onTriggered: root.nowMs = Date.now()
+  }
+
+
+  Timer {
+    id: rollbackReset
+    interval: 8000
+    repeat: false
+    onTriggered: root.rollbackArmed = false
   }
 
   implicitWidth: button.implicitWidth
@@ -118,7 +157,7 @@ BarWidget {
     owner: root
     open: root.popupOpen
     contentWidth: fittedContentWidth(Style.space(370), Style.space(430))
-    contentHeight: fittedContentHeight(content.implicitHeight, Style.space(650))
+    contentHeight: fittedContentHeight(content.implicitHeight, Style.space(760))
 
     Column {
       id: content
@@ -204,6 +243,128 @@ BarWidget {
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.caption
           elide: Text.ElideMiddle
+        }
+      }
+
+      Column {
+        width: parent.width
+        visible: !!root.wayfinder && root.wayfinder.localEndpoint
+          && root.wayfinder.setupState.ready
+          && (root.wayfinder.projectSupported || root.wayfinder.projectRoot !== "")
+        spacing: Style.space(5)
+
+        Row {
+          width: parent.width
+
+          Text {
+            text: "PROJECT PROFILE"
+            color: Qt.darker(root.foreground, 1.5)
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.caption
+            font.bold: true
+            font.letterSpacing: 1.1
+          }
+
+          Item {
+            width: Math.max(0, parent.width - parent.children[0].implicitWidth
+              - projectStatusLabel.implicitWidth)
+            height: 1
+          }
+
+          Text {
+            id: projectStatusLabel
+            text: root.wayfinder ? root.wayfinder.projectState.status : ""
+            color: root.wayfinder && root.wayfinder.projectState.urgent
+              ? Color.urgent : root.foreground
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.caption
+            font.bold: true
+          }
+        }
+
+        Text {
+          width: parent.width
+          text: root.wayfinder ? root.wayfinder.projectState.title : ""
+          color: root.foreground
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.bodySmall
+          font.bold: true
+          elide: Text.ElideRight
+        }
+
+        Text {
+          width: parent.width
+          visible: !!root.wayfinder && root.wayfinder.projectRoot !== ""
+          text: root.wayfinder && root.wayfinder.projectReport.canonicalRepository !== ""
+            ? root.wayfinder.projectReport.canonicalRepository + " · " + root.wayfinder.projectRoot
+            : (root.wayfinder ? root.wayfinder.projectRoot : "")
+          color: Qt.darker(root.foreground, 1.55)
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.caption
+          elide: Text.ElideMiddle
+        }
+
+        Text {
+          width: parent.width
+          text: root.projectDetail()
+          color: root.wayfinder && (root.wayfinder.projectError !== ""
+            || root.wayfinder.projectState.urgent) ? Color.urgent : Qt.darker(root.foreground, 1.45)
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.Wrap
+        }
+
+        TextField {
+          id: projectToken
+          visible: !!root.wayfinder && root.wayfinder.projectState.step === "setup"
+          width: parent.width
+          password: true
+          placeholderText: "Project token · passed once over stdin"
+          enabled: !!root.wayfinder && !root.wayfinder.projectBusy
+          onAccepted: root.submitProjectToken()
+        }
+
+        Row {
+          width: parent.width
+          spacing: Style.space(6)
+          visible: !!root.wayfinder && root.wayfinder.projectRoot !== ""
+
+          Button {
+            id: projectSetupButton
+            visible: !!root.wayfinder && root.wayfinder.projectState.step === "setup"
+            text: root.wayfinder && root.wayfinder.projectActionKind === "project-setup"
+              && root.wayfinder.projectBusy ? "Setting up…" : "Set up project"
+            foreground: root.foreground
+            bordered: true
+            enabled: !!root.wayfinder && Model.validProjectToken(projectToken.text)
+              && !root.wayfinder.projectBusy
+            onClicked: root.submitProjectToken()
+          }
+
+          Button {
+            id: projectRollbackButton
+            visible: !!root.wayfinder && root.wayfinder.projectReport.owned
+            text: root.rollbackArmed ? "Confirm rollback" : "Roll back"
+            foreground: root.rollbackArmed ? Color.urgent : root.foreground
+            bordered: root.rollbackArmed
+            enabled: !!root.wayfinder && !root.wayfinder.projectBusy
+            onClicked: root.requestProjectRollback()
+          }
+
+          Item { width: Math.max(0, parent.width
+            - (projectSetupButton.visible ? projectSetupButton.width : 0)
+            - (projectRollbackButton.visible ? projectRollbackButton.width : 0)
+            - projectRefresh.width - Style.space(18)); height: 1 }
+
+          Button {
+            id: projectRefresh
+            iconText: "↻"
+            tooltipText: "Refresh repository profile"
+            foreground: root.foreground
+            enabled: !!root.wayfinder && root.wayfinder.projectSupported
+              && !root.wayfinder.projectBusy
+            onClicked: root.wayfinder.refreshProject()
+          }
         }
       }
 
