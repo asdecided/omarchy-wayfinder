@@ -139,8 +139,11 @@ The Codex smoke is a release-gate harness, not an installer pin. Set
 provider, runs the real Codex CLI through Wayfinder, requires Codex to execute
 one read-only shell tool, and verifies that the tool result returns before the
 final response. CI pins both the Codex contract version and the reviewed Router
-merge commit. The plugin's downloadable Router version and checksums move only
-in the later coordinated release PR.
+merge commit. It explicitly disables Responses server-side web search because a
+generic Chat Completions backend cannot provide that hosted capability; the
+contract under test is Codex's client-round-tripped coding tools. The plugin's
+downloadable Router version and checksums move only in the later coordinated
+release PR.
 
 ## License
 
