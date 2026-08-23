@@ -41,6 +41,69 @@ assert.deepEqual(
 );
 assert.equal(model.doctor("not-json").valid, false);
 
+const capabilityReport = model.capabilities(JSON.stringify({
+  schema_version: "1",
+  implementation: "rust",
+  version: "2026.8.1",
+  native_commands: ["project setup", "project status", "project rollback"]
+}));
+assert.equal(capabilityReport.valid, true);
+assert.equal(capabilityReport.projectSupported, true);
+assert.equal(model.capabilities('{"schema_version":"1","implementation":"rust","native_commands":[]}').projectSupported, false);
+
+const setupRequiredProject = model.projectStatus(JSON.stringify({
+  schema_version: 1,
+  status: "setup-required",
+  canonical_repository: null,
+  repository_root: "/home/tom/code/project",
+  profile_directory: null,
+  owned: false,
+  token_source: null,
+  token_matches: null,
+  setup_required: true,
+  profile_modified: false
+}));
+assert.equal(setupRequiredProject.valid, true);
+assert.equal(setupRequiredProject.setupRequired, true);
+assert.equal(model.projectState({
+  configured: true,
+  capabilityChecked: true,
+  supported: true,
+  checked: true,
+  report: setupRequiredProject
+}).action, "Set up project");
+
+const readyProject = model.projectStatus(JSON.stringify({
+  schema_version: 1,
+  status: "ready",
+  canonical_repository: "asdecided/WayfinderRouter",
+  repository_url: "https://github.com/asdecided/WayfinderRouter",
+  repository_root: "/home/tom/code/WayfinderRouter",
+  profile_directory: "/home/tom/.config/wayfinder/projects/project-abc",
+  profile_id: "project-abc",
+  workspace_id: "project-abc",
+  key_id: "project-abc",
+  owned: true,
+  token_source: "interactive-prompt",
+  token_matches: true,
+  setup_required: false,
+  profile_modified: true
+}));
+const readyProjectState = model.projectState({
+  configured: true,
+  capabilityChecked: true,
+  supported: true,
+  checked: true,
+  report: readyProject
+});
+assert.equal(readyProjectState.ready, true);
+assert.equal(readyProjectState.status, "Custom project profile");
+assert.match(readyProjectState.detail, /token matches/i);
+assert.equal(model.projectState({ configured: true, capabilityChecked: true, supported: false }).step, "unsupported");
+assert.equal(model.validProjectToken("correct horse battery staple"), true);
+assert.equal(model.validProjectToken("bad\nsecret"), false);
+assert.equal(model.projectError("Wayfinder project token (input is not persisted):\nwayfinder-router: failed"), "wayfinder-router: failed");
+
 const setupBase = {
   localEndpoint: true,
   binaryInstalled: true,

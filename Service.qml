@@ -13,6 +13,7 @@ Item {
   property string endpoint: Model.DEFAULT_ENDPOINT
   property int refreshIntervalSec: 15
   property string configPath: ""
+  property string projectRoot: ""
   property string defaultConfigPath: ""
   readonly property string effectiveConfigPath: String(configPath || "").trim() !== ""
     ? String(configPath || "").trim() : defaultConfigPath
@@ -26,6 +27,9 @@ Item {
   property bool offline: false
   property bool operatorDataAvailable: false
   property bool dryRun: false
+  property bool capabilityChecked: false
+  property bool projectSupported: false
+  property string routerVersion: ""
 
   property bool configChecked: false
   property bool configExists: false
@@ -36,6 +40,13 @@ Item {
   property string doctorError: ""
   property bool setupRequested: false
   property string setupStage: "idle"
+
+  property bool projectChecked: false
+  property var projectReport: Model.emptyProjectStatus()
+  property string projectError: ""
+  property string projectMessage: ""
+  property string projectActionKind: ""
+  property string pendingProjectToken: ""
 
   property var healthModels: []
   property var missingKeys: []
@@ -55,6 +66,9 @@ Item {
     || systemdProcess.running || healthProcess.running || modelsProcess.running
     || recentProcess.running || savingsProcess.running || actionProcess.running
     || defaultConfigProcess.running || configProbeProcess.running || doctorProcess.running
+    || capabilityProcess.running || projectStatusProcess.running || projectActionProcess.running
+  readonly property bool projectBusy: capabilityProcess.running || projectStatusProcess.running
+    || projectActionProcess.running
   readonly property bool localEndpoint: Model.serviceInstallArguments(endpoint, effectiveConfigPath) !== null
   readonly property var setupState: Model.setupState({
     localEndpoint: localEndpoint,
@@ -70,6 +84,14 @@ Item {
     missingEnvironment: doctorMissingEnvironment
   })
   readonly property string setupDetail: doctorError !== "" ? doctorError : setupState.detail
+  readonly property var projectState: Model.projectState({
+    configured: String(projectRoot || "").trim() !== "",
+    capabilityChecked: capabilityChecked,
+    supported: projectSupported,
+    checked: projectChecked,
+    report: projectReport,
+    error: projectError
+  })
   readonly property string statusText: !localEndpoint
     ? (!reachable ? "Remote unreachable"
       : offline ? "Remote online · offline mode"
@@ -87,10 +109,13 @@ Item {
     var nextEndpoint = Model.normalizedEndpoint(settings.endpoint)
     var nextInterval = Model.boundedInteger(settings.refreshIntervalSec, 15, 5, 300)
     var nextConfig = String(settings.configPath || "").trim()
+    var nextProject = String(settings.projectRoot || "").trim()
     var changed = endpoint !== nextEndpoint || refreshIntervalSec !== nextInterval || configPath !== nextConfig
+    var projectChanged = projectRoot !== nextProject
     endpoint = nextEndpoint
     refreshIntervalSec = nextInterval
     configPath = nextConfig
+    projectRoot = nextProject
     refreshTimer.interval = refreshIntervalSec * 1000
     if (changed) {
       configChecked = false
@@ -101,6 +126,13 @@ Item {
       doctorMissingEnvironment = []
       doctorError = ""
       Qt.callLater(refresh)
+    }
+    if (projectChanged) {
+      projectChecked = false
+      projectReport = Model.emptyProjectStatus()
+      projectError = ""
+      projectMessage = ""
+      if (projectSupported && projectRoot !== "") Qt.callLater(refreshProject)
     }
   }
 
@@ -130,6 +162,8 @@ Item {
       savingsProcess.command = curlCommand("/v1/savings")
       savingsProcess.running = true
     }
+    if (binaryInstalled && !capabilityChecked && !capabilityProcess.running) refreshCapabilities()
+    if (projectSupported && projectRoot !== "" && !projectActionProcess.running) refreshProject()
   }
 
   function probeConfig() {
@@ -197,6 +231,43 @@ Item {
     } else {
       startOrRestartService(false)
     }
+  }
+
+  function refreshCapabilities() {
+    if (!binaryInstalled || binaryPath === "" || capabilityProcess.running) return
+    capabilityProcess.command = [binaryPath, "capabilities", "--json"]
+    capabilityProcess.running = true
+  }
+
+  function refreshProject() {
+    if (!binaryInstalled || !projectSupported || projectRoot === ""
+        || projectStatusProcess.running || projectActionProcess.running) return
+    projectStatusProcess.command = [binaryPath, "project", "status", "--root", projectRoot, "--json"]
+    projectStatusProcess.running = true
+  }
+
+  function setupProject(token) {
+    if (!binaryInstalled || !projectSupported || projectRoot === ""
+        || projectStatusProcess.running || projectActionProcess.running
+        || !Model.validProjectToken(token)) return
+    pendingProjectToken = String(token)
+    projectActionKind = "project-setup"
+    projectMessage = ""
+    projectError = ""
+    projectActionProcess.command = [binaryPath, "project", "setup", "--root", projectRoot,
+      "--prompt-token", "--json"]
+    projectActionProcess.running = true
+  }
+
+  function rollbackProject() {
+    if (!binaryInstalled || !projectSupported || projectRoot === ""
+        || projectStatusProcess.running || projectActionProcess.running || !projectReport.owned) return
+    pendingProjectToken = ""
+    projectActionKind = "project-rollback"
+    projectMessage = ""
+    projectError = ""
+    projectActionProcess.command = [binaryPath, "project", "rollback", "--root", projectRoot, "--json"]
+    projectActionProcess.running = true
   }
 
   function curlCommand(path) {
@@ -349,13 +420,110 @@ Item {
         var path = String(text || "").trim().split("\n")[0]
         root.binaryPath = path
         root.binaryInstalled = path !== ""
-        if (root.binaryInstalled) Qt.callLater(root.probeConfig)
+        if (root.binaryInstalled) {
+          Qt.callLater(root.probeConfig)
+          Qt.callLater(root.refreshCapabilities)
+        }
       }
     }
     onExited: function(exitCode) {
       if (exitCode !== 0) {
         root.binaryPath = ""
         root.binaryInstalled = false
+        root.capabilityChecked = false
+        root.projectSupported = false
+        root.routerVersion = ""
+      }
+    }
+  }
+
+  Process {
+    id: capabilityProcess
+    stdout: StdioCollector {
+      id: capabilityStdout
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: capabilityStderr
+      waitForEnd: true
+    }
+    onExited: function(exitCode) {
+      var report = Model.capabilities(capabilityStdout.text)
+      root.capabilityChecked = true
+      root.routerVersion = report.valid ? report.version : ""
+      root.projectSupported = exitCode === 0 && report.valid && report.projectSupported
+      if (!root.projectSupported) {
+        root.projectChecked = false
+        root.projectReport = Model.emptyProjectStatus()
+      } else if (root.projectRoot !== "") {
+        Qt.callLater(root.refreshProject)
+      }
+    }
+  }
+
+  Process {
+    id: projectStatusProcess
+    stdout: StdioCollector {
+      id: projectStatusStdout
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: projectStatusStderr
+      waitForEnd: true
+    }
+    onExited: function(exitCode) {
+      root.projectChecked = true
+      if (exitCode === 0) {
+        var report = Model.projectStatus(projectStatusStdout.text)
+        root.projectReport = report
+        root.projectError = report.valid ? "" : "The Router returned an invalid project status."
+      } else {
+        root.projectReport = Model.emptyProjectStatus()
+        var detail = Model.projectError(projectStatusStderr.text || projectStatusStdout.text)
+        root.projectError = detail || "The repository could not be inspected."
+      }
+    }
+  }
+
+  Process {
+    id: projectActionProcess
+    stdinEnabled: true
+    stdout: StdioCollector {
+      id: projectActionStdout
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: projectActionStderr
+      waitForEnd: true
+    }
+    onStarted: {
+      if (root.projectActionKind === "project-setup" && root.pendingProjectToken !== "") {
+        projectActionProcess.write(root.pendingProjectToken + "\n")
+      }
+      root.pendingProjectToken = ""
+    }
+    onExited: function(exitCode) {
+      root.pendingProjectToken = ""
+      root.projectChecked = true
+      if (exitCode === 0) {
+        var report = Model.projectStatus(projectActionStdout.text)
+        if (report.valid) {
+          root.projectReport = report
+          root.projectError = ""
+          root.projectMessage = root.projectActionKind === "project-rollback"
+            ? "Owned project state rolled back."
+            : (report.status === "unchanged" ? "Project profile already active."
+              : "Project profile created; the Router will hot reload it.")
+        } else {
+          root.projectReport = Model.emptyProjectStatus()
+          root.projectMessage = ""
+          root.projectError = "The Router returned an invalid project result."
+        }
+      } else {
+        root.projectMessage = ""
+        var detail = Model.projectError(projectActionStderr.text || projectActionStdout.text)
+        root.projectError = detail || (root.projectActionKind === "project-rollback"
+          ? "Project rollback failed." : "Project setup failed.")
       }
     }
   }
