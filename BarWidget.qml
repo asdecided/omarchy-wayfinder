@@ -17,7 +17,8 @@ BarWidget {
     ? Color.urgent
     : (wayfinder.degraded ? Color.urgent : Color.accent)
   readonly property var recentEntries: wayfinder && wayfinder.recentReport.valid
-    ? wayfinder.recentReport.recent.slice(0, 5) : []
+    ? wayfinder.recentReport.recent.slice(0, 4) : []
+  readonly property var actionableReceipt: Model.latestActionableReceipt(recentEntries)
   readonly property var visibleModels: wayfinder ? wayfinder.modelDetails.slice(0, 5) : []
 
   function configureService() {
@@ -56,6 +57,10 @@ BarWidget {
   function routeColor(name) {
     var model = modelFor(name)
     return model && Model.isLocalModel(model) ? Color.accent : foreground
+  }
+
+  function receiptColor(entry) {
+    return Model.receiptNeedsAttention(entry) ? Color.urgent : routeColor(entry.servedBy || entry.model)
   }
 
   function actionDetail() {
@@ -263,7 +268,7 @@ BarWidget {
       Column {
         width: parent.width
         visible: root.recentEntries.length > 0
-        spacing: Style.space(4)
+        spacing: Style.space(7)
 
         Repeater {
           model: root.recentEntries
@@ -271,34 +276,85 @@ BarWidget {
           Row {
             required property var modelData
             width: parent.width
-            height: Style.space(22)
+            height: Style.space(42)
             spacing: Style.space(8)
 
             Rectangle {
               width: Style.space(6)
               height: width
               radius: width / 2
-              color: root.routeColor(modelData.model)
+              color: root.receiptColor(modelData)
               anchors.verticalCenter: parent.verticalCenter
             }
-            Text {
-              width: Math.max(0, parent.width - routeAge.implicitWidth - Style.space(20))
-              text: Model.shortModel(modelData.model) + "  ·  " + modelData.mode
-              color: root.foreground
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.bodySmall
-              elide: Text.ElideRight
+
+            Column {
+              width: Math.max(0, parent.width - receiptState.implicitWidth - Style.space(28))
+              spacing: Style.space(1)
               anchors.verticalCenter: parent.verticalCenter
+
+              Text {
+                width: parent.width
+                text: Model.routeTitle(modelData)
+                color: root.foreground
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+                font.bold: true
+                elide: Text.ElideRight
+              }
+              Text {
+                width: parent.width
+                text: Model.receiptContext(modelData)
+                color: Qt.darker(root.foreground, 1.55)
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.caption
+                elide: Text.ElideRight
+              }
+              Text {
+                width: parent.width
+                text: Model.routeReason(modelData)
+                color: Qt.darker(root.foreground, 1.55)
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.caption
+                elide: Text.ElideRight
+              }
             }
-            Text {
-              id: routeAge
-              text: Model.relativeTime(modelData.timestamp, root.nowMs)
-              color: Qt.darker(root.foreground, 1.55)
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.caption
+
+            Column {
+              id: receiptState
               anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(1)
+
+              Text {
+                text: Model.outcomeLabel(modelData.outcome)
+                  + (modelData.httpStatus !== null ? " " + modelData.httpStatus : "")
+                color: root.receiptColor(modelData)
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+                anchors.right: parent.right
+              }
+              Text {
+                text: Model.relativeTime(modelData.timestamp, root.nowMs)
+                color: Qt.darker(root.foreground, 1.55)
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.caption
+                anchors.right: parent.right
+              }
             }
           }
+        }
+
+        Text {
+          width: parent.width
+          visible: root.actionableReceipt !== null
+          text: root.actionableReceipt
+            ? Model.routeTitle(root.actionableReceipt) + ": "
+              + Model.receiptRemediation(root.actionableReceipt)
+            : ""
+          color: Color.urgent
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.Wrap
         }
       }
 

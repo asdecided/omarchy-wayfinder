@@ -42,8 +42,12 @@ assert.ok(service.includes('"init", "--preset", "local", "--path"'));
 assert.ok(service.includes('"doctor", "--config"'));
 assert.ok(service.includes("effectiveConfigPath"));
 assert.ok(model.includes("function setupState(state)"));
+assert.ok(model.includes("function receiptRemediation(entry)"));
 assert.ok(widget.includes(manifest.id));
 assert.ok(widget.includes("FIRST RUN"));
+assert.ok(widget.includes("Model.receiptContext(modelData)"));
+assert.ok(widget.includes("Model.routeReason(modelData)"));
+assert.ok(widget.includes("Model.receiptRemediation(root.actionableReceipt)"));
 assert.ok(!service.match(/api[_-]?key\s*[:=]\s*["'][^"']+/i), "QML must not contain an API key");
 
 const versionMatch = installer.match(/^router_version="(\d{4}\.\d+\.\d+)"$/m);
