@@ -78,6 +78,7 @@ model_provider = "wayfinder"
 model = "auto"
 approval_policy = "never"
 project_doc_max_bytes = 0
+web_search = "disabled"
 
 [features]
 apps = false
