@@ -23,6 +23,11 @@ live in `asdecided/WayfinderRouter`.
 The plugin never stores provider credentials. It reads only the gateway's
 prompt-free local status surfaces.
 
+See the exact [supported versions and evidence](docs/compatibility.md) before
+installing on a moving Quattro system. Support claims are pinned to reviewed
+Omarchy, Quickshell, Router, and coding-agent contracts rather than inferred
+from generic compatibility.
+
 ## Install
 
 ```sh
@@ -54,6 +59,9 @@ An existing policy is never overwritten. Invalid policy stops setup with a
 specific error and can be rechecked after repair. Missing provider environment
 is listed by variable name but does not prevent the local service from being
 installed. Interrupted setup is safe to resume from the bar.
+
+For bounded diagnostic commands, source update steps, and current rollback
+limits, use the [troubleshooting guide](docs/troubleshooting.md).
 
 The Router binary is installed to `~/.local/bin` by default. Set
 `WAYFINDER_BIN_DIR` before running the installer when another user-owned binary
