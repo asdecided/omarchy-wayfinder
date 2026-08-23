@@ -44,4 +44,5 @@ jobs:
       - name: Run a real Codex tool round-trip
         env:
           WAYFINDER_ROUTER_BIN: ${{ github.workspace }}/.router-source/rust/target/debug/wayfinder-router
+          WAYFINDER_CODEX_SANDBOX: danger-full-access
         run: bash test/codex-smoke.sh
