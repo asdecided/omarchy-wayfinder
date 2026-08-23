@@ -3,16 +3,38 @@ import { writeFileSync } from "node:fs";
 
 const port = Number.parseInt(process.argv[2] ?? "", 10);
 const evidencePath = process.argv[3];
+const contract = process.argv[4];
+const contracts = {
+  "codex-0.149.0": {
+    agent: "codex",
+    version: "0.149.0",
+    preferredTool: "exec_command",
+    argumentName: "cmd",
+    toolMarker: "WAYFINDER_TOOL_ROUNDTRIP",
+    finalMarker: "WAYFINDER_CODEX_SMOKE_OK",
+  },
+  "claude-code-2.1.241": {
+    agent: "claude-code",
+    version: "2.1.241",
+    preferredTool: "Bash",
+    argumentName: "command",
+    toolMarker: "WAYFINDER_CLAUDE_TOOL_ROUNDTRIP",
+    finalMarker: "WAYFINDER_CLAUDE_SMOKE_OK",
+  },
+};
+const selected = contracts[contract];
 const maxRequestBytes = 2 * 1024 * 1024;
-const toolMarker = "WAYFINDER_TOOL_ROUNDTRIP";
-const finalMarker = "WAYFINDER_CODEX_SMOKE_OK";
+const toolCallId = "call_wayfinder_smoke";
 
-if (!Number.isInteger(port) || port < 1024 || port > 65535 || !evidencePath) {
-  process.stderr.write("usage: node codex-mock-provider.mjs PORT EVIDENCE_PATH\n");
+if (!Number.isInteger(port) || port < 1024 || port > 65535 || !evidencePath || !selected) {
+  process.stderr.write(
+    "usage: node coding-agent-mock-provider.mjs PORT EVIDENCE_PATH codex-0.149.0|claude-code-2.1.241\n",
+  );
   process.exit(2);
 }
 
 let requestCount = 0;
+let translatedToolName = "";
 
 function json(response, status, value) {
   const body = JSON.stringify(value);
@@ -41,16 +63,16 @@ function functionTools(body) {
     .map((tool) => tool.function);
 }
 
-function execTool(body) {
+function requestedTool(body) {
   const tools = functionTools(body);
-  return tools.find((tool) => tool.name === "exec_command")
-    ?? tools.find((tool) => tool.name.includes("exec_command"))
-    ?? tools.find((tool) => tool.parameters?.properties?.cmd);
+  return tools.find((tool) => tool.name === selected.preferredTool)
+    ?? tools.find((tool) => tool.name.toLowerCase() === selected.preferredTool.toLowerCase())
+    ?? tools.find((tool) => tool.parameters?.properties?.[selected.argumentName]);
 }
 
 function toolResult(body) {
   return (Array.isArray(body.messages) ? body.messages : [])
-    .find((message) => message?.role === "tool" && message.tool_call_id === "call_wayfinder_smoke");
+    .find((message) => message?.role === "tool" && message.tool_call_id === toolCallId);
 }
 
 const server = createServer((request, response) => {
@@ -85,10 +107,13 @@ const server = createServer((request, response) => {
     requestCount += 1;
     const result = toolResult(body);
     if (!result) {
-      const tool = execTool(body);
+      const tool = requestedTool(body);
       if (!tool) {
-        return json(response, 400, { error: { message: "Codex exec_command tool was not translated" } });
+        return json(response, 400, {
+          error: { message: `${selected.preferredTool} was not translated for ${selected.agent}` },
+        });
       }
+      translatedToolName = tool.name;
       return sse(response, [
         {
           id: "chatcmpl-wayfinder-smoke-1",
@@ -99,11 +124,13 @@ const server = createServer((request, response) => {
             delta: {
               tool_calls: [{
                 index: 0,
-                id: "call_wayfinder_smoke",
+                id: toolCallId,
                 type: "function",
                 function: {
                   name: tool.name,
-                  arguments: JSON.stringify({ cmd: `printf ${toolMarker}` }),
+                  arguments: JSON.stringify({
+                    [selected.argumentName]: `printf ${selected.toolMarker}`,
+                  }),
                 },
               }],
             },
@@ -115,7 +142,7 @@ const server = createServer((request, response) => {
     }
 
     const content = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
-    if (!content.includes(toolMarker)) {
+    if (!content.includes(selected.toolMarker)) {
       const preview = content.replaceAll(/\s+/g, " ").slice(0, 512);
       return json(response, 400, {
         error: {
@@ -125,12 +152,13 @@ const server = createServer((request, response) => {
     }
     writeFileSync(evidencePath, `${JSON.stringify({
       schema_version: 1,
-      codex_contract: "0.149.0",
+      agent: selected.agent,
+      client_version: selected.version,
       requests: requestCount,
-      tool_name: "exec_command",
-      tool_call_id: "call_wayfinder_smoke",
+      tool_name: translatedToolName,
+      tool_call_id: toolCallId,
       tool_output_seen: true,
-      final_marker: finalMarker,
+      final_marker: selected.finalMarker,
     }, null, 2)}\n`, { mode: 0o600 });
     return sse(response, [
       {
@@ -139,7 +167,7 @@ const server = createServer((request, response) => {
         model: "smoke-model",
         choices: [{
           index: 0,
-          delta: { content: finalMarker },
+          delta: { content: selected.finalMarker },
           finish_reason: "stop",
         }],
         usage: { prompt_tokens: 48, completion_tokens: 6 },
@@ -149,5 +177,5 @@ const server = createServer((request, response) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  process.stdout.write(`Codex smoke provider listening on 127.0.0.1:${port}\n`);
+  process.stdout.write(`${selected.agent} smoke provider listening on 127.0.0.1:${port}\n`);
 });

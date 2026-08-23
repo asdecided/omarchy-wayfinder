@@ -85,6 +85,42 @@ export OPENAI_BASE_URL=http://127.0.0.1:8088/v1
 Provider keys remain in the environment or the existing reviewed credential
 boundary referenced by the Wayfinder configuration.
 
+## Verified coding agents
+
+Wayfinder currently release-gates these client contracts against the same
+candidate Router build:
+
+| Agent | Client contract | Wayfinder endpoint | Model selection | Real smoke evidence |
+| --- | --- | --- | --- | --- |
+| Codex | 0.149.0 | `/v1/responses` | `model = "auto"` in reviewed TOML | Streaming `exec_command` call and returned tool output |
+| Claude Code | 2.1.241 | `/v1/messages` | `ANTHROPIC_MODEL=auto` | Streaming `Bash` call and returned tool output |
+
+Print the bounded connection recipe for either client with the Router CLI:
+
+```sh
+wayfinder-router connect codex
+wayfinder-router connect claude-code
+```
+
+The Codex recipe is a manual addition to `~/.codex/config.toml`; remove its
+`wayfinder` provider and model selection to reverse it. The Claude Code recipe
+sets shell environment variables only; reverse it without changing a file:
+
+```sh
+unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN ANTHROPIC_MODEL
+unset CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY
+```
+
+The printed `wayfinder-local` token is only a loopback placeholder and is not a
+provider credential.
+
+Both release-gate smokes use Server-Sent Events and require one real client
+tool round-trip through the Router. The harness terminates a stuck client at a
+bounded timeout and prints client, Router, and provider diagnostics on failure.
+Router unit and integration contracts cover disconnect cancellation and
+Anthropic/OpenAI error-envelope translation; those are not claimed as separate
+real-client smoke scenarios yet.
+
 ## Controls
 
 - Left click: open or close the status panel.
@@ -129,27 +165,32 @@ modified, symlinked, or independently installed Router is never deleted.
 node scripts/validate.mjs
 node test/model.test.mjs
 bash test/install.test.sh
-bash test/codex-smoke.sh  # requires Codex 0.149.0 and a candidate Router binary
+bash test/codex-smoke.sh        # Codex 0.149.0 + candidate Router
+bash test/claude-code-smoke.sh  # Claude Code 2.1.241 + candidate Router
 bash -n install.sh uninstall.sh
 omarchy plugin validate  # when run on Omarchy Quattro
 ```
 
-The Codex smoke is a release-gate harness, not an installer pin. Set
-`WAYFINDER_ROUTER_BIN` to a candidate Router build; it starts a bounded local
-provider, runs the real Codex CLI through Wayfinder, requires Codex to execute
-one read-only shell tool, and verifies that the tool result returns before the
-final response. CI pins both the Codex contract version and the reviewed Router
-merge commit. It explicitly disables Responses server-side web search because a
-generic Chat Completions backend cannot provide that hosted capability; the
-contract under test is Codex's client-round-tripped coding tools. The plugin's
-downloadable Router version and checksums move only in the later coordinated
-release PR.
+The coding-agent smokes are release-gate harnesses, not installer pins. Set
+`WAYFINDER_ROUTER_BIN` to a candidate Router build; each starts the same bounded
+local provider, runs the real client through Wayfinder, requires one read-only
+shell tool, and verifies that the tool result returns before the final response.
+CI pins both client contract versions and one reviewed Router commit, then
+builds that Router once for both agents. Codex explicitly disables Responses
+server-side web search because a generic Chat Completions backend cannot provide
+that hosted capability. The plugin's downloadable Router version and checksums
+move only in the later coordinated release PR.
 
 The harness defaults to Codex's `read-only` sandbox. GitHub's hosted runner
 cannot create the Bubblewrap loopback interface used by that sandbox, so CI
 sets `WAYFINDER_CODEX_SANDBOX=danger-full-access` for the fixed, no-write
 `printf` command only. Run the default locally on Omarchy to cover the native
 sandbox as well as the Router transport.
+
+Claude Code runs with only its built-in `Bash` tool enabled and allowlisted,
+inside a temporary workspace and temporary home/config directories. The smoke
+uses the same `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, and
+`ANTHROPIC_MODEL=auto` values printed by `wayfinder-router connect claude-code`.
 
 ## License
 
