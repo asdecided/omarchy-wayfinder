@@ -116,7 +116,12 @@ const server = createServer((request, response) => {
 
     const content = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
     if (!content.includes(toolMarker)) {
-      return json(response, 400, { error: { message: "tool result marker did not return through Wayfinder" } });
+      const preview = content.replaceAll(/\s+/g, " ").slice(0, 512);
+      return json(response, 400, {
+        error: {
+          message: `tool result marker did not return through Wayfinder; received ${JSON.stringify(preview)}`,
+        },
+      });
     }
     writeFileSync(evidencePath, `${JSON.stringify({
       schema_version: 1,
