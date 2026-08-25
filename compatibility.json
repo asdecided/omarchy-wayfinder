@@ -3,7 +3,7 @@
   "checkedAt": "2026-08-25",
   "plugin": {
     "id": "io.github.asdecided.wayfinder",
-    "version": "0.3.1"
+    "version": "0.3.2"
   },
   "omarchy": {
     "channel": "quattro",
@@ -43,6 +43,7 @@
     }
   ],
   "lifecycle": {
+    "standardInstallation": "contract-validated",
     "freshInstall": "release-gated",
     "existingRouterNoClobber": "release-gated",
     "pluginSourceUpdate": "documented",

@@ -60,6 +60,7 @@ assert.ok(workflow.includes(`opencode-linux-x64@${agents.get("opencode")?.versio
 assert.ok(workflow.includes("compatibility.json"), "CI must read the Omarchy compatibility pin");
 
 assert.equal(compatibility.lifecycle.freshInstall, "release-gated");
+assert.equal(compatibility.lifecycle.standardInstallation, "contract-validated");
 assert.equal(compatibility.lifecycle.existingRouterNoClobber, "release-gated");
 assert.equal(compatibility.lifecycle.routerUpgrade, "contract-validated");
 assert.equal(compatibility.lifecycle.routerRollback, "contract-validated");
@@ -78,6 +79,7 @@ for (const value of [
 
 assert.ok(readme.includes("docs/compatibility.md"));
 assert.ok(readme.includes("docs/troubleshooting.md"));
+assert.ok(readme.includes("omarchy plugin add https://github.com/asdecided/omarchy-wayfinder.git --enable"));
 assert.ok(troubleshooting.includes("Upgrade or roll back a plugin-owned Router"));
 assert.ok(troubleshooting.includes("journalctl --user -u wayfinder-router.service"));
 

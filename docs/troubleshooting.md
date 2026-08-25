@@ -33,7 +33,13 @@ The plugin requires Omarchy Quattro's third-party plugin contract. Omarchy 3.x h
 
 ## Router is missing
 
-Run `./install.sh` from the installed plugin directory. The installer downloads only the pinned release for the detected architecture, verifies its SHA-256 digest, and installs it under the current user's home. It refuses unsupported architectures and paths outside `HOME`.
+Open the Wayfinder bar item and choose **Set up Wayfinder**. The panel invokes
+the installed plugin's bounded `./install.sh --bootstrap-router` mode, which
+downloads only the pinned release for the detected architecture, verifies its
+SHA-256 digest, and installs it under the current user's home. It refuses
+unsupported architectures and paths outside `HOME`. Running that same bounded
+command from the installed plugin directory is the recovery path if the panel
+cannot remain open long enough to show the error.
 
 If another `wayfinder-router` is already on `PATH`, the installer uses it without replacing it. Check `command -v wayfinder-router` and `wayfinder-router --version` to determine which executable owns the command.
 

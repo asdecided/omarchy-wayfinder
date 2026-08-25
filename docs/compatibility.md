@@ -6,7 +6,7 @@ Checked: 2026-08-25.
 
 | Surface | Supported contract | Evidence in this repository |
 | --- | --- | --- |
-| Wayfinder plugin | `0.3.1`, manifest schema `1` | Local package validation plus the official Omarchy validator |
+| Wayfinder plugin | `0.3.2`, manifest schema `1` | Local package validation plus the official Omarchy validator |
 | Omarchy | Quattro `4.0.0.alpha` at [`f4f3d4c71a0a5c392b20ce05291531881a1b3bfe`](https://github.com/basecamp/omarchy/commit/f4f3d4c71a0a5c392b20ce05291531881a1b3bfe) | CI checks out that exact source commit and runs its `omarchy-plugin-validate` against this plugin |
 | Quickshell | Omarchy-packaged `quickshell` `0.3.1` or newer | The pinned Omarchy source contains the reviewed switch to packaged Quickshell at [`2c593dbbaad67698e7b9b0809d082d86540a7a1c`](https://github.com/basecamp/omarchy/commit/2c593dbbaad67698e7b9b0809d082d86540a7a1c); model and package tests run without a graphical shell |
 | Router | `router-v2026.8.1` | Native archive download, SHA-256 verification, layout inspection, execution, provenance, no-clobber, and ownership-checked removal tests |
@@ -28,6 +28,7 @@ The official Omarchy manifest validator is contract evidence, not a substitute f
 
 | Operation | Status | Current behavior |
 | --- | --- | --- |
+| Standard Omarchy install | Contract-validated | `omarchy plugin add … --enable`, then the explicit in-panel setup action invokes only the installed plugin's checksum-pinned Router bootstrap; the native smoke remains the graphical release gate |
 | Fresh plugin and Router install | Release-gated | Downloads one checksum-pinned native archive and records exact provenance |
 | Install with an existing Router | Release-gated | Uses the existing executable and does not record or replace it |
 | Plugin source update | Documented | Omarchy shows the Git diff and fast-forwards the plugin checkout |

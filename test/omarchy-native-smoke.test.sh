@@ -94,7 +94,7 @@ PATH="$mock_bin:$(dirname -- "$router_path"):$PATH" \
 jq -e '
   .schemaVersion == 1
   and .plugin.id == "io.github.asdecided.wayfinder"
-  and .plugin.version == "0.3.1"
+  and .plugin.version == "0.3.2"
   and .plugin.cleanCheckout == true
   and .plugin.enabledBeforeAndAfterRestart == true
   and .plugin.widgetVisible == true
