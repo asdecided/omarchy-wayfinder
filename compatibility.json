@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-08-23",
+  "checkedAt": "2026-08-25",
   "plugin": {
     "id": "io.github.asdecided.wayfinder",
-    "version": "0.3.0"
+    "version": "0.3.1"
   },
   "omarchy": {
     "channel": "quattro",
@@ -17,13 +17,13 @@
     "contractCommit": "2c593dbbaad67698e7b9b0809d082d86540a7a1c"
   },
   "router": {
-    "release": "2026.8.0",
+    "release": "2026.8.1",
     "architectures": [
       "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu"
     ],
     "libc": "glibc",
-    "projectProfiles": "unavailable"
+    "projectProfiles": "available"
   },
   "codingAgents": [
     {

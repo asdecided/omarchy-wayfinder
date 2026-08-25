@@ -37,7 +37,7 @@ cd ~/.config/omarchy/plugins/io.github.asdecided.wayfinder
 ```
 
 When the Router is missing, the installer downloads the native
-`router-v2026.8.0` archive for the current architecture and verifies its pinned
+`router-v2026.8.1` archive for the current architecture and verifies its pinned
 SHA-256 digest before extraction. It does not require Rust or Cargo. An existing
 `wayfinder-router` executable is never replaced.
 
@@ -133,10 +133,10 @@ Router. The Router removes only the exact ownership-verified project directory;
 it does not touch the repository or unrelated project profiles.
 
 These controls are capability-gated through
-`wayfinder-router capabilities --json`. This source change deliberately leaves
-the downloadable Router pinned
-to `router-v2026.8.0`; that release reports project profiles as unavailable.
-The binary and plugin pin move together only in the later coordinated release.
+`wayfinder-router capabilities --json`. The pinned
+`router-v2026.8.1` release exposes authenticated local project profiles; when
+that capability is absent or a different Router is on `PATH`, the panel fails
+closed instead of editing QML or project state.
 
 ## Verified coding agents
 
@@ -259,8 +259,8 @@ shell tool, and verifies that the tool result returns before the final response.
 CI pins both client contract versions and one reviewed Router commit, then
 builds that Router once for all three agents. Codex explicitly disables Responses
 server-side web search because a generic Chat Completions backend cannot provide
-that hosted capability. The plugin's downloadable Router version and checksums
-move only in the later coordinated release PR.
+that hosted capability. The plugin's downloadable Router version and checksums move only in reviewed
+coordinated release PRs.
 
 The harness defaults to Codex's `read-only` sandbox. GitHub's hosted runner
 cannot create the Bubblewrap loopback interface used by that sandbox, so CI

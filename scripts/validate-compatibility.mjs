@@ -40,7 +40,7 @@ assert.deepEqual(compatibility.router.architectures, [
   "x86_64-unknown-linux-gnu",
   "aarch64-unknown-linux-gnu",
 ]);
-assert.equal(compatibility.router.projectProfiles, "unavailable");
+assert.equal(compatibility.router.projectProfiles, "available");
 
 const installerVersion = installer.match(/^router_version="(\d{4}\.\d+\.\d+)"$/m)?.[1];
 assert.equal(installerVersion, compatibility.router.release);

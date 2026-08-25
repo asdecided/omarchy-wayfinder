@@ -27,11 +27,11 @@ PATH="/usr/bin:/bin" \
 
 router="$test_home/bin/wayfinder-router"
 test -x "$router"
-"$router" --version | grep -F "2026.8.0"
+"$router" --version | grep -F "2026.8.1"
 
 provenance="$test_home/.local/state/wayfinder/omarchy-router-install"
 test -f "$provenance"
-grep -F "router_version=2026.8.0" "$provenance"
+grep -F "router_version=2026.8.1" "$provenance"
 grep -F "router_path=$router" "$provenance"
 
 HOME="$test_home" \
