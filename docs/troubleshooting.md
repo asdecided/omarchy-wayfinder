@@ -55,9 +55,9 @@ Reprint the reviewed recipe with `wayfinder-router connect codex`, `wayfinder-ro
 
 For Codex, review `~/.codex/config.toml` and remove the `wayfinder` provider/model selection to reverse the connection. For Claude Code, unset the four variables listed in the main README. For OpenCode, remove the `provider.wayfinder` object and any `wayfinder/auto` selection from the project or user `opencode.json`. Wayfinder never silently edits a client or imports its provider credentials.
 
-## Project profile controls are unavailable
+## Project profile controls
 
-The currently downloadable `router-v2026.8.0` does not expose the project-profile capability. The panel intentionally reports it as unavailable. Do not work around that gate by editing QML or project state; the control becomes active only when a later coordinated plugin release pins a compatible Router.
+The pinned `router-v2026.8.1` exposes authenticated local project profiles. If the panel reports them as unavailable, confirm `wayfinder-router --version` and `wayfinder-router capabilities --json`, then check whether a different executable appears first on `PATH`. Do not work around the capability gate by editing QML or project state.
 
 ## Review and update plugin source
 
@@ -119,4 +119,4 @@ Promotion intent is recorded before the atomic rename. The next installer action
 
 Do not edit or delete transaction/provenance files during recovery. If the active digest matches neither side, Wayfinder fails closed and requires manual inspection. Removing the plugin or disabling the widget does not stop the independently supervised Router service.
 
-The lifecycle is contract-validated with synthetic versioned binaries. It becomes release-gated only when a coordinated release moves the real Router pin and exercises upgrade and rollback between two checksum-verified archives.
+The lifecycle remains contract-validated for upgrade and rollback. The plugin now pins a real `2026.8.1` archive, but the stronger release-gated claim requires a recorded `2026.8.0` → `2026.8.1` → `2026.8.0` cycle between the two checksum-verified releases.
