@@ -17,7 +17,7 @@ live in `asdecided/WayfinderRouter`.
 
 - Omarchy Quattro with third-party plugin support.
 - An x86_64 or ARM64 glibc-based Linux system.
-- `curl`, `tar`, `sha256sum`, `systemd --user`, and `wl-copy` (provided by a
+- `curl`, `tar`, `sha256sum`, `flock`, `systemd --user`, and `wl-copy` (provided by a
   standard Omarchy installation).
 
 The plugin never stores provider credentials. It reads only the gateway's
@@ -31,28 +31,25 @@ from generic compatibility.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/asdecided/omarchy-wayfinder.git
-cd ~/.config/omarchy/plugins/io.github.asdecided.wayfinder
-./install.sh
+omarchy plugin add https://github.com/asdecided/omarchy-wayfinder.git --enable
 ```
 
-When the Router is missing, the installer downloads the native
+Open the Wayfinder bar item and choose **Set up Wayfinder**. When the Router is
+missing, that explicit action runs the plugin's bounded bootstrap mode: it
+downloads the native
 `router-v2026.8.1` archive for the current architecture and verifies its pinned
 SHA-256 digest before extraction. It does not require Rust or Cargo. An existing
 `wayfinder-router` executable is never replaced.
 
-The installer rescans plugins and enables the widget. It does not start the
-Router service, create a gateway configuration, or add a provider credential.
+The same explicit, resumable first-run flow then:
 
-Open the Wayfinder bar item and choose **Set up Wayfinder**. The explicit,
-resumable first-run flow:
-
-1. checks for an existing policy without changing it;
-2. creates a no-clobber `local` policy at
+1. installs the checksum-verified Router only when no Router is already available;
+2. checks for an existing policy without changing it;
+3. creates a no-clobber `local` policy at
    `${XDG_CONFIG_HOME:-$HOME/.config}/wayfinder/wayfinder-router.toml` only
    when no policy exists;
-3. validates that policy with `wayfinder-router doctor --json`; and
-4. installs and starts `~/.config/systemd/user/wayfinder-router.service`
+4. validates that policy with `wayfinder-router doctor --json`; and
+5. installs and starts `~/.config/systemd/user/wayfinder-router.service`
    through the native Router CLI.
 
 An existing policy is never overwritten. Invalid policy stops setup with a
@@ -65,9 +62,9 @@ limits, use the [troubleshooting guide](docs/troubleshooting.md).
 Release candidates also require the operator-run [native Omarchy smoke](docs/native-smoke.md);
 hosted contract tests cannot attest that a real Quickshell session rendered the widget.
 
-The Router binary is installed to `~/.local/bin` by default. Set
-`WAYFINDER_BIN_DIR` before running the installer when another user-owned binary
-directory is required. Router upgrades remain explicit plugin changes: the
+The Router binary is installed to `~/.local/bin` by default. A shell that starts
+Omarchy may set `WAYFINDER_BIN_DIR` when another user-owned binary directory is
+required. Router upgrades remain explicit plugin changes: the
 release version and both architecture digests are reviewed before these pins
 move. The installer records the exact release, target, archive digest, binary
 digest, and user-owned path for a binary that it installs. When a later reviewed
@@ -85,8 +82,9 @@ also makes that recovery explicit. Independently installed or modified Router
 binaries are never replaced. Promotion changes the on-disk executable; restart
 `wayfinder-router.service` from the panel after upgrade or rollback to run it.
 
-Omarchy clones third-party plugins disabled so their source can be reviewed
-before enablement. The script performs the explicit enable step.
+Without `--enable`, Omarchy clones third-party plugins disabled so their source
+can be reviewed before enablement. The standard command above requests enablement
+through Omarchy's own confirmation and placement flow.
 
 ## Configure
 
@@ -187,8 +185,8 @@ disconnect-cancellation and Anthropic/OpenAI error-envelope matrix.
 - Left click: open or close the status panel.
 - Right click: refresh status.
 - Middle click: copy the endpoint.
-- **Set up Wayfinder**: create and validate a no-clobber local policy, then
-  install the systemd user service.
+- **Set up Wayfinder**: install the checksum-pinned Router when missing, create
+  and validate a no-clobber local policy, then install the systemd user service.
 - **Check policy / Install / Start / Restart service**: resume from the next
   incomplete or failed step without repeating successful work.
 - **Set up project**: pass a one-time project token over stdin and create the

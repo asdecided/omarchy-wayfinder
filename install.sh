@@ -14,13 +14,18 @@ router_provenance_dir="${XDG_STATE_HOME:-$HOME/.local/state}/wayfinder"
 router_provenance_file="$router_provenance_dir/omarchy-router-install"
 source "$source_dir/scripts/router-lifecycle.sh"
 
+installer_mode="full"
 case "${1:-}" in
   "") router_action="install" ;;
+  --bootstrap-router)
+    router_action="install"
+    installer_mode="bootstrap"
+    ;;
   --upgrade-router) router_action="upgrade" ;;
   --rollback-router) router_action="rollback" ;;
   --recover-router) router_action="recover" ;;
   *)
-    printf 'usage: %s [--upgrade-router|--rollback-router|--recover-router]\n' "$0" >&2
+    printf 'usage: %s [--bootstrap-router|--upgrade-router|--rollback-router|--recover-router]\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -33,7 +38,8 @@ runtime_files=(
   BarWidget.qml
 )
 
-if [[ "$(realpath -m -- "$source_dir")" != "$(realpath -m -- "$plugin_dir")" ]]; then
+if [[ "$installer_mode" == "full"
+    && "$(realpath -m -- "$source_dir")" != "$(realpath -m -- "$plugin_dir")" ]]; then
   install -d -m 0755 "$plugin_dir"
   for file in "${runtime_files[@]}"; do
     install -m 0644 "$source_dir/$file" "$plugin_dir/$file"
@@ -73,6 +79,8 @@ download_router_release() {
   curl \
     --fail \
     --location \
+    --silent \
+    --show-error \
     --proto '=https' \
     --tlsv1.2 \
     --output "$router_tmp_dir/$router_archive" \
@@ -154,6 +162,11 @@ case "$router_action" in
     fi
     ;;
 esac
+
+if [[ "$installer_mode" == "bootstrap" ]]; then
+  printf '%s\n' "The Wayfinder Router is ready."
+  exit 0
+fi
 
 if command -v omarchy-shell >/dev/null 2>&1; then
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
