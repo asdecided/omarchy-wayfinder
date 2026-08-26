@@ -147,6 +147,7 @@ candidate Router build:
 | Claude Code | 2.1.241 | `/v1/messages` | `ANTHROPIC_MODEL=auto` | Streaming `Bash` call and returned tool output |
 | OpenCode | 1.18.21 | `/v1/chat/completions` | `wayfinder/auto` in reviewed JSON | Streaming `bash` round-trip, upstream error, and disconnect cancellation |
 | Pi | 0.84.3 | `/v1/chat/completions` | `wayfinder/auto` in reviewed JSON | Streaming `bash` round-trip, structured upstream error, and disconnect cancellation |
+| Aider | 0.86.1 | `/v1/chat/completions` | `openai/auto` with reviewed shell variables | Streaming one-file edit applied through the Router |
 
 Print the bounded connection recipe for any supported client with the Router CLI:
 
@@ -155,6 +156,7 @@ wayfinder-router connect codex
 wayfinder-router connect claude-code
 wayfinder-router connect opencode
 wayfinder-router connect pi
+wayfinder-router connect aider
 ```
 
 The Codex recipe is a manual addition to `~/.codex/config.toml`; remove its
@@ -176,11 +178,17 @@ The Pi recipe is a manual merge of the `providers.wayfinder` object into
 selection to reverse it. Wayfinder never reads or imports Pi's account or
 provider credentials.
 
+The Aider recipe exports `OPENAI_API_BASE` and the loopback placeholder
+`OPENAI_API_KEY`, then selects `openai/auto`. Unset both variables and stop
+selecting that model to reverse it. Wayfinder never reads or imports Aider's
+provider credentials.
+
 The printed `wayfinder-local` token is only a loopback placeholder and is not a
 provider credential.
 
-All four release-gate smokes use Server-Sent Events and require one real client
-tool round-trip through the Router. The OpenCode and Pi contracts additionally
+All five release-gate smokes use Server-Sent Events and require one real client
+action through the Router. Codex, Claude Code, OpenCode, and Pi prove a tool
+round-trip; Aider proves an actual file edit. The OpenCode and Pi contracts additionally
 prove that an upstream error reaches the real client and terminating that
 client closes the provider stream through the Router. The harness terminates a
 stuck client at a bounded timeout and prints client, Router, and provider
@@ -255,16 +263,18 @@ bash test/codex-smoke.sh        # Codex 0.149.0 + candidate Router
 bash test/claude-code-smoke.sh  # Claude Code 2.1.241 + candidate Router
 bash test/opencode-smoke.sh     # OpenCode 1.18.21 + candidate Router
 bash test/pi-smoke.sh           # Pi 0.84.3 + candidate Router
+bash test/aider-smoke.sh        # Aider 0.86.1 + candidate Router
 bash -n install.sh uninstall.sh scripts/router-lifecycle.sh
 omarchy plugin validate  # when run on Omarchy Quattro
 ```
 
 The coding-agent smokes are release-gate harnesses, not installer pins. Set
 `WAYFINDER_ROUTER_BIN` to a candidate Router build; each starts the same bounded
-local provider, runs the real client through Wayfinder, requires one read-only
-shell tool, and verifies that the tool result returns before the final response.
+local provider and runs the real client through Wayfinder. Four contracts
+require one read-only shell tool and verify the returned output; Aider applies
+one exact edit in an isolated disposable Git repository.
 CI pins each client contract version and one reviewed Router commit, then
-builds that Router once for all four agents. Codex explicitly disables Responses
+builds that Router once for all five agents. Codex explicitly disables Responses
 server-side web search because a generic Chat Completions backend cannot provide
 that hosted capability. The plugin's downloadable Router version and checksums move only in reviewed
 coordinated release PRs.
@@ -294,6 +304,12 @@ unsupported `developer` role and `reasoning_effort` fields. The harness asserts
 Pi's structured error event because Pi intentionally exits successfully after
 reporting an upstream model error, then separately proves disconnect
 cancellation reaches the provider.
+
+Aider runs non-interactively with an isolated home, config, cache, and one-file
+Git repository. Its official OpenAI-compatible environment contract points to
+the Router, model warnings, updates, analytics, repository maps, auto-commits,
+and URL detection are disabled, and the harness requires Aider to apply one
+exact streamed search/replace edit before it reports success.
 
 ## License
 

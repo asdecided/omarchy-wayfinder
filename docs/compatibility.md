@@ -2,7 +2,7 @@
 
 This matrix is the supported surface for the current Wayfinder plugin source. It is deliberately narrower than generic QML, OpenAI, or Anthropic compatibility. The machine-readable authority is [`compatibility.json`](../compatibility.json); CI rejects drift between it, the manifest, installer, coding-agent pins, and this document.
 
-Checked: 2026-08-25.
+Checked: 2026-08-26.
 
 | Surface | Supported contract | Evidence in this repository |
 | --- | --- | --- |
@@ -15,6 +15,7 @@ Checked: 2026-08-25.
 | Claude Code | `2.1.241` | Real streaming `/v1/messages` tool round-trip through the same candidate Router |
 | OpenCode | `1.18.21` | Real streaming `/v1/chat/completions` `bash` round-trip, upstream error propagation, and disconnect cancellation through the same candidate Router, with its auxiliary title requests counted separately |
 | Pi | `0.84.3` | Real streaming `/v1/chat/completions` `bash` round-trip, structured upstream error propagation, and disconnect cancellation through the same candidate Router |
+| Aider | `0.86.1` | Real streaming `/v1/chat/completions` one-file edit through the same candidate Router, with updates, analytics, auto-commits, and repository maps disabled |
 
 ## Evidence levels
 

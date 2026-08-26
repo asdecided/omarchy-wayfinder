@@ -45,6 +45,11 @@
       "id": "pi",
       "version": "0.84.3",
       "evidence": "real-stream-tool-error-cancel"
+    },
+    {
+      "id": "aider",
+      "version": "0.86.1",
+      "evidence": "real-stream-edit"
     }
   ],
   "lifecycle": {

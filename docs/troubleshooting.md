@@ -57,9 +57,9 @@ First-run setup is resumable. Reopening the panel continues from the first incom
 
 ## Coding agent does not route
 
-Reprint the reviewed recipe with `wayfinder-router connect codex`, `wayfinder-router connect claude-code`, `wayfinder-router connect opencode`, or `wayfinder-router connect pi`. Confirm the exact client version in the compatibility matrix and the loopback endpoint. The placeholder local token is not a provider credential.
+Reprint the reviewed recipe with `wayfinder-router connect codex`, `wayfinder-router connect claude-code`, `wayfinder-router connect opencode`, `wayfinder-router connect pi`, or `wayfinder-router connect aider`. Confirm the exact client version in the compatibility matrix and the loopback endpoint. The placeholder local token is not a provider credential.
 
-For Codex, review `~/.codex/config.toml` and remove the `wayfinder` provider/model selection to reverse the connection. For Claude Code, unset the four variables listed in the main README. For OpenCode, remove the `provider.wayfinder` object and any `wayfinder/auto` selection from the project or user `opencode.json`. For Pi, remove the `providers.wayfinder` object and any saved `wayfinder/auto` selection from `~/.pi/agent/models.json`. Wayfinder never silently edits a client or imports its provider credentials.
+For Codex, review `~/.codex/config.toml` and remove the `wayfinder` provider/model selection to reverse the connection. For Claude Code, unset the four variables listed in the main README. For OpenCode, remove the `provider.wayfinder` object and any `wayfinder/auto` selection from the project or user `opencode.json`. For Pi, remove the `providers.wayfinder` object and any saved `wayfinder/auto` selection from `~/.pi/agent/models.json`. For Aider, unset `OPENAI_API_BASE` and `OPENAI_API_KEY` and stop selecting `openai/auto`. Wayfinder never silently edits a client or imports its provider credentials.
 
 ## Project profile controls
 
