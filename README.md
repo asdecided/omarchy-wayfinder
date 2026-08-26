@@ -146,6 +146,7 @@ candidate Router build:
 | Codex | 0.149.0 | `/v1/responses` | `model = "auto"` in reviewed TOML | Streaming `exec_command` call and returned tool output |
 | Claude Code | 2.1.241 | `/v1/messages` | `ANTHROPIC_MODEL=auto` | Streaming `Bash` call and returned tool output |
 | OpenCode | 1.18.21 | `/v1/chat/completions` | `wayfinder/auto` in reviewed JSON | Streaming `bash` round-trip, upstream error, and disconnect cancellation |
+| Pi | 0.84.3 | `/v1/chat/completions` | `wayfinder/auto` in reviewed JSON | Streaming `bash` round-trip, structured upstream error, and disconnect cancellation |
 
 Print the bounded connection recipe for any supported client with the Router CLI:
 
@@ -153,6 +154,7 @@ Print the bounded connection recipe for any supported client with the Router CLI
 wayfinder-router connect codex
 wayfinder-router connect claude-code
 wayfinder-router connect opencode
+wayfinder-router connect pi
 ```
 
 The Codex recipe is a manual addition to `~/.codex/config.toml`; remove its
@@ -169,16 +171,21 @@ the project or user `opencode.json`. Remove that provider object and any
 `wayfinder/auto` model selection to reverse it. Wayfinder never reads or
 imports OpenCode's provider credentials.
 
+The Pi recipe is a manual merge of the `providers.wayfinder` object into
+`~/.pi/agent/models.json`. Remove that object and any saved `wayfinder/auto`
+selection to reverse it. Wayfinder never reads or imports Pi's account or
+provider credentials.
+
 The printed `wayfinder-local` token is only a loopback placeholder and is not a
 provider credential.
 
-All three release-gate smokes use Server-Sent Events and require one real client
-tool round-trip through the Router. The OpenCode contract additionally proves
-that an upstream error reaches the real client and terminating that client
-closes the provider stream through the Router. The harness terminates a stuck
-client at a bounded timeout and prints client, Router, and provider diagnostics
-on failure. Router unit and integration contracts continue to cover the wider
-disconnect-cancellation and Anthropic/OpenAI error-envelope matrix.
+All four release-gate smokes use Server-Sent Events and require one real client
+tool round-trip through the Router. The OpenCode and Pi contracts additionally
+prove that an upstream error reaches the real client and terminating that
+client closes the provider stream through the Router. The harness terminates a
+stuck client at a bounded timeout and prints client, Router, and provider
+diagnostics on failure. Router unit and integration contracts continue to cover
+the wider disconnect-cancellation and Anthropic/OpenAI error-envelope matrix.
 
 ## Controls
 
@@ -246,6 +253,7 @@ bash test/router-lifecycle.test.sh
 bash test/codex-smoke.sh        # Codex 0.149.0 + candidate Router
 bash test/claude-code-smoke.sh  # Claude Code 2.1.241 + candidate Router
 bash test/opencode-smoke.sh     # OpenCode 1.18.21 + candidate Router
+bash test/pi-smoke.sh           # Pi 0.84.3 + candidate Router
 bash -n install.sh uninstall.sh scripts/router-lifecycle.sh
 omarchy plugin validate  # when run on Omarchy Quattro
 ```
@@ -254,8 +262,8 @@ The coding-agent smokes are release-gate harnesses, not installer pins. Set
 `WAYFINDER_ROUTER_BIN` to a candidate Router build; each starts the same bounded
 local provider, runs the real client through Wayfinder, requires one read-only
 shell tool, and verifies that the tool result returns before the final response.
-CI pins both client contract versions and one reviewed Router commit, then
-builds that Router once for all three agents. Codex explicitly disables Responses
+CI pins each client contract version and one reviewed Router commit, then
+builds that Router once for all four agents. Codex explicitly disables Responses
 server-side web search because a generic Chat Completions backend cannot provide
 that hosted capability. The plugin's downloadable Router version and checksums move only in reviewed
 coordinated release PRs.
@@ -278,6 +286,13 @@ used by the smoke, selects `wayfinder/auto`, and points the custom
 `@ai-sdk/openai-compatible` provider at the candidate Router. The harness also
 handles OpenCode's auxiliary title request separately so it cannot be mistaken
 for the two-request tool round-trip.
+
+Pi runs in JSON mode with an isolated home and workspace. Its custom-provider
+configuration uses the documented `openai-completions` API and disables
+unsupported `developer` role and `reasoning_effort` fields. The harness asserts
+Pi's structured error event because Pi intentionally exits successfully after
+reporting an upstream model error, then separately proves disconnect
+cancellation reaches the provider.
 
 ## License
 

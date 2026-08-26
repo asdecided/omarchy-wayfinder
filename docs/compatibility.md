@@ -14,6 +14,7 @@ Checked: 2026-08-25.
 | Codex | `0.149.0` | Real streaming `/v1/responses` tool round-trip through a candidate Router |
 | Claude Code | `2.1.241` | Real streaming `/v1/messages` tool round-trip through the same candidate Router |
 | OpenCode | `1.18.21` | Real streaming `/v1/chat/completions` `bash` round-trip, upstream error propagation, and disconnect cancellation through the same candidate Router, with its auxiliary title requests counted separately |
+| Pi | `0.84.3` | Real streaming `/v1/chat/completions` `bash` round-trip, structured upstream error propagation, and disconnect cancellation through the same candidate Router |
 
 ## Evidence levels
 
