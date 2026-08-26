@@ -69,14 +69,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: asdecided/WayfinderRouter
-          ref: 07834d7bebb7788ed47fd7e79c90ec9832c15180
+          ref: 6f78a6e63e38d50af9846cc7ec0daef37275fc2c
           path: .router-source
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
       - name: Install coding-agent contract versions
         run: |
-          npm install --global @openai/codex@0.149.0 @anthropic-ai/claude-code@2.1.241
+          npm install --global @openai/codex@0.149.0 @anthropic-ai/claude-code@2.1.241 @earendil-works/pi-coding-agent@0.84.3
           npm install --prefix "$RUNNER_TEMP/opencode" opencode-linux-x64@1.18.21
       - name: Build the candidate Router contract
         run: cargo build --locked --manifest-path .router-source/rust/Cargo.toml --bin wayfinder-router
@@ -94,3 +94,7 @@ jobs:
           WAYFINDER_ROUTER_BIN: ${{ github.workspace }}/.router-source/rust/target/debug/wayfinder-router
           OPENCODE_BIN: ${{ runner.temp }}/opencode/node_modules/opencode-linux-x64/bin/opencode
         run: bash test/opencode-smoke.sh
+      - name: Run a real Pi tool round-trip
+        env:
+          WAYFINDER_ROUTER_BIN: ${{ github.workspace }}/.router-source/rust/target/debug/wayfinder-router
+        run: bash test/pi-smoke.sh

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-08-25",
+  "checkedAt": "2026-08-26",
   "plugin": {
     "id": "io.github.asdecided.wayfinder",
     "version": "0.3.2"
@@ -39,6 +39,11 @@
     {
       "id": "opencode",
       "version": "1.18.21",
+      "evidence": "real-stream-tool-error-cancel"
+    },
+    {
+      "id": "pi",
+      "version": "0.84.3",
       "evidence": "real-stream-tool-error-cancel"
     }
   ],
