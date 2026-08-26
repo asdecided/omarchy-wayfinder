@@ -250,6 +250,7 @@ node scripts/validate.mjs
 node test/model.test.mjs
 bash test/install.test.sh
 bash test/router-lifecycle.test.sh
+bash test/record-router-release-cycle.test.sh
 bash test/codex-smoke.sh        # Codex 0.149.0 + candidate Router
 bash test/claude-code-smoke.sh  # Claude Code 2.1.241 + candidate Router
 bash test/opencode-smoke.sh     # OpenCode 1.18.21 + candidate Router

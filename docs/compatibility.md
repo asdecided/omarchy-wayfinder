@@ -38,7 +38,27 @@ The official Omarchy manifest validator is contract evidence, not a substitute f
 | Router rollback | Contract-validated | Swaps to the verified last-known-good on-disk binary and retains the displaced version as the next rollback target |
 | Project profiles | Available in the install pin | The `2026.8.1` Router exposes authenticated local project profiles; the panel still fails closed when the capability is absent |
 
-The lifecycle harness proves ownership refusal, atomic promotion, last-known-good retention, rollback, and recovery both before and after the promotion rename. The `2026.8.1` pin uses a real checksum-verified Router archive; upgrade and rollback remain **contract-validated** until an operator records a complete `2026.8.0` → `2026.8.1` → `2026.8.0` archive cycle.
+The automated lifecycle harness proves ownership refusal, atomic promotion,
+last-known-good retention, rollback, and recovery both before and after the
+promotion rename. Upgrade and rollback remain **contract-validated** until an
+operator records a complete archive cycle on Omarchy.
+
+After a coordinated plugin source pins Router `2026.8.2`, run the real gate
+from that installed plugin source:
+
+```sh
+bash scripts/record-router-release-cycle.sh \
+  --from 2026.8.1 \
+  --to 2026.8.2
+```
+
+The command verifies the plugin-owned provenance, performs
+`2026.8.1 → 2026.8.2 → 2026.8.1 → 2026.8.2`, restarts and health-checks the
+user service at every transition, checks the Omarchy shell, and ends on the
+candidate. It writes a mode-0600, host-identity-free
+`wf-omarchy-router-cycle-v1` record under the user's home directory. Attach
+that record to the release evidence before changing the compatibility status
+to release-gated.
 
 ## Pin movement rule
 
