@@ -561,7 +561,7 @@ BarWidget {
 
       Column {
         width: parent.width
-        visible: !root.wayfinder || !root.wayfinder.projectState.ready
+        visible: !root.wayfinder || !root.wayfinder.projectState.ready || !root.projectValue.valid
         spacing: Style.space(7)
 
         Row {
