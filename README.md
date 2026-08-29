@@ -153,8 +153,9 @@ recalculating them in QML:
   from the selected project's bounded recent receipts;
 - retained terminal successes, failures, cancellations, cache hits, and the
   resulting delivery failure rate;
-- the exact real-or-relative price unit, price-table fingerprint, and
-  `dearest-configured-rate` counterfactual used for savings; and
+- the exact real-or-relative price unit, current price-table fingerprint, and
+  current `dearest-configured-rate` counterfactual; historical totals retain
+  their recorded baseline amounts but not every prior table fingerprint; and
 - explicit evidence gaps. User corrections are not collected by this schema,
   so correction rate remains unavailable rather than appearing as zero.
 
