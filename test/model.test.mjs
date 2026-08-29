@@ -169,7 +169,7 @@ assert.equal(model.projectValueWindow(projectValue), "30 DAYS");
 assert.equal(model.projectValueSavingsLabel(projectValue), "$0.04 saved");
 assert.equal(model.projectFailureLabel(projectValue), "25.0% delivery failures");
 assert.equal(model.projectQualityLabel(projectValue), "Corrections not collected · 0 / 4 labelled");
-assert.equal(model.projectBaselineLabel(projectValue), "$0.0100/1k baseline · cloud · prices abcdef01");
+assert.equal(model.projectBaselineLabel(projectValue), "$0.0100/1k current baseline · cloud · prices abcdef01");
 assert.match(model.projectValueRemediation(projectValue), /1 recent delivery failure needs attention/);
 assert.deepEqual(
   JSON.parse(JSON.stringify(model.projectBoundaryStats(projectValue))),

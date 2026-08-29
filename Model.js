@@ -682,9 +682,9 @@ function projectBaselineLabel(report) {
   var version = report.baseline.priceTableVersion !== ""
     ? " · prices " + report.baseline.priceTableVersion.substring(0, 8) : ""
   if (report.accounting.priced && report.baseline.unit === "usd") {
-    return "$" + fixed(report.baseline.ratePer1k, 4) + "/1k baseline · " + routes + version
+    return "$" + fixed(report.baseline.ratePer1k, 4) + "/1k current baseline · " + routes + version
   }
-  return fixed(report.baseline.ratePer1k, 3) + " relative /1k baseline · " + routes + version
+  return fixed(report.baseline.ratePer1k, 3) + " relative /1k current baseline · " + routes + version
 }
 
 function projectValueRemediation(report) {
