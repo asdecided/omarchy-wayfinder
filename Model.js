@@ -650,9 +650,13 @@ function projectValueWindow(report) {
 function projectValueSavingsLabel(report) {
   if (!report || !report.valid || report.accounting.requests === 0) return "No project accounting"
   if (report.accounting.priced && report.accounting.unit === "usd") {
-    return "$" + fixed(report.accounting.saved, 2) + " saved"
+    return report.accounting.saved < 0
+      ? "$" + fixed(Math.abs(report.accounting.saved), 2) + " above baseline"
+      : "$" + fixed(report.accounting.saved, 2) + " saved"
   }
-  return fixed(report.accounting.savedPct, 1) + "% relative savings"
+  return report.accounting.savedPct < 0
+    ? fixed(Math.abs(report.accounting.savedPct), 1) + "% above baseline"
+    : fixed(report.accounting.savedPct, 1) + "% relative savings"
 }
 
 function projectFailureLabel(report) {
@@ -688,16 +692,16 @@ function projectValueRemediation(report) {
   if (report.accounting.requests === 0 && report.delivery.retained === 0) {
     return "Use this project through Wayfinder to begin a prompt-free value record."
   }
+  if (report.delivery.failed > 0) {
+    return report.delivery.failed + " recent delivery failure"
+      + (report.delivery.failed === 1 ? " needs" : "s need") + " attention."
+  }
   if (!report.accounting.priced) {
     return "Add reviewed cost_per_1k values to turn relative savings into currency."
   }
   if (report.accounting.estimatedRequests > 0) {
     return report.accounting.estimatedRequests + " of " + report.accounting.requests
       + " accounting records use estimated token counts."
-  }
-  if (report.delivery.failed > 0) {
-    return report.delivery.failed + " recent delivery failure"
-      + (report.delivery.failed === 1 ? " needs" : "s need") + " attention."
   }
   return ""
 }

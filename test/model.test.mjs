@@ -170,7 +170,7 @@ assert.equal(model.projectValueSavingsLabel(projectValue), "$0.04 saved");
 assert.equal(model.projectFailureLabel(projectValue), "25.0% delivery failures");
 assert.equal(model.projectQualityLabel(projectValue), "Corrections not collected · 0 / 4 labelled");
 assert.equal(model.projectBaselineLabel(projectValue), "$0.0100/1k baseline · cloud · prices abcdef01");
-assert.match(model.projectValueRemediation(projectValue), /1 of 4 accounting records/);
+assert.match(model.projectValueRemediation(projectValue), /1 recent delivery failure needs attention/);
 assert.deepEqual(
   JSON.parse(JSON.stringify(model.projectBoundaryStats(projectValue))),
   {
@@ -187,6 +187,13 @@ assert.deepEqual(
   }
 );
 assert.equal(model.projectValue('{"schema_version":"wrong"}').valid, false);
+const aboveBaselinePayload = structuredClone(projectValuePayload);
+aboveBaselinePayload.accounting.saved = -0.02;
+aboveBaselinePayload.accounting.saved_pct = -25;
+assert.equal(
+  model.projectValueSavingsLabel(model.projectValue(JSON.stringify(aboveBaselinePayload))),
+  "$0.02 above baseline"
+);
 const missingCorrectionField = structuredClone(projectValuePayload);
 delete missingCorrectionField.quality.correction_rate_pct;
 assert.equal(model.projectValue(JSON.stringify(missingCorrectionField)).valid, false);
