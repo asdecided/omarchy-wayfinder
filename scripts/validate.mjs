@@ -87,8 +87,10 @@ assert.ok(projectRootSetting, "manifest must expose the repository root setting"
 assert.equal(projectRootSetting.type, "path");
 assert.equal(manifest.barWidget.defaults.projectRoot, "");
 
-const versionMatch = installer.match(/^router_version="(\d{4}\.\d+\.\d+)"$/m);
-assert.ok(versionMatch, "installer must pin a Router CalVer release");
+const versionMatch = installer.match(
+  /^router_version="((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))"$/m
+);
+assert.ok(versionMatch, "installer must pin a Router SemVer release");
 assert.ok(
   readme.includes(`router-v${versionMatch[1]}`),
   "README must identify the pinned Router release"

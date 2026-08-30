@@ -67,8 +67,13 @@ Omarchy may set `WAYFINDER_BIN_DIR` when another user-owned binary directory is
 required. Router upgrades remain explicit plugin changes: the
 release version and both architecture digests are reviewed before these pins
 move. The installer records the exact release, target, archive digest, binary
-digest, and user-owned path for a binary that it installs. When a later reviewed
-plugin pin changes, upgrade only that plugin-owned binary with:
+digest, and user-owned path for a binary that it installs. Router `2026.8.1` is
+the immutable final DateVer pin. Subsequent Router releases
+use SemVer; lifecycle operations treat exact versions and reviewed checksums as
+identities and do not compare the two numbering schemes.
+
+When a later reviewed plugin pin changes, upgrade only that plugin-owned binary
+with:
 
 ```sh
 ./install.sh --upgrade-router

@@ -44,22 +44,27 @@ last-known-good retention, rollback, and recovery both before and after the
 promotion rename. Upgrade and rollback remain **contract-validated** until an
 operator records a complete archive cycle on Omarchy.
 
-After a coordinated plugin source pins Router `2026.8.2`, run the real gate
+After a coordinated plugin source pins Router `1.0.0`, run the real gate
 from that installed plugin source:
 
 ```sh
 bash scripts/record-router-release-cycle.sh \
   --from 2026.8.1 \
-  --to 2026.8.2
+  --to 1.0.0
 ```
 
 The command verifies the plugin-owned provenance, performs
-`2026.8.1 → 2026.8.2 → 2026.8.1 → 2026.8.2`, restarts and health-checks the
+`2026.8.1 → 1.0.0 → 2026.8.1 → 1.0.0`, restarts and health-checks the
 user service at every transition, checks the Omarchy shell, and ends on the
 candidate. It writes a mode-0600, host-identity-free
 `wf-omarchy-router-cycle-v1` record under the user's home directory. Attach
 that record to the release evidence before changing the compatibility status
 to release-gated.
+
+`2026.8.1` is the immutable final Router DateVer release. Router `1.0.0` and
+later use SemVer. The lifecycle validates strict numeric SemVer cores and uses
+exact versions plus reviewed checksums as identities; it never orders versions
+across the numbering change.
 
 ## Pin movement rule
 

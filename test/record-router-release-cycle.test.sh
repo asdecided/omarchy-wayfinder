@@ -18,7 +18,7 @@ make_router() {
 }
 
 make_router "$HOME/bin/wayfinder-router" 2026.8.1
-make_router "$test_root/candidates/wayfinder-router" 2026.8.2
+make_router "$test_root/candidates/wayfinder-router" 1.0.0
 
 plugin_id="io.github.asdecided.wayfinder"
 router_provenance_dir="$XDG_STATE_HOME/wayfinder"
@@ -34,7 +34,7 @@ router_write_current_metadata \
 cat > "$test_root/installer.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-router_version="2026.8.2"
+router_version="1.0.0"
 plugin_id="io.github.asdecided.wayfinder"
 router_provenance_dir="${XDG_STATE_HOME}/wayfinder"
 router_provenance_file="$router_provenance_dir/omarchy-router-install"
@@ -43,7 +43,7 @@ case "$1" in
   --upgrade-router)
     router_promote_candidate \
       "$WAYFINDER_LIFECYCLE_CANDIDATE" \
-      2026.8.2 \
+      1.0.0 \
       x86_64-unknown-linux-gnu \
       "$(printf '%064d' 2)"
     ;;
@@ -79,24 +79,24 @@ evidence="$HOME/cycle.json"
 
 bash "$repo_root/scripts/record-router-release-cycle.sh" \
   --from 2026.8.1 \
-  --to 2026.8.2 \
+  --to 1.0.0 \
   --evidence "$evidence" \
   >/dev/null
 
 jq -e '
   .schema_version == "wf-omarchy-router-cycle-v1"
-  and .sequence == ["2026.8.1", "2026.8.2", "2026.8.1", "2026.8.2"]
+  and .sequence == ["2026.8.1", "1.0.0", "2026.8.1", "1.0.0"]
   and .service_restart == "passed"
   and .health == "passed"
   and .omarchy_shell == "passed"
-  and .final_version == "2026.8.2"
+  and .final_version == "1.0.0"
 ' "$evidence" >/dev/null
 [[ "$(stat -c '%a' "$evidence")" == "600" ]]
-[[ "$("$HOME/bin/wayfinder-router" --version)" == "wayfinder-router 2026.8.2" ]]
+[[ "$("$HOME/bin/wayfinder-router" --version)" == "wayfinder-router 1.0.0" ]]
 
 if bash "$repo_root/scripts/record-router-release-cycle.sh" \
   --from 2026.8.1 \
-  --to 2026.8.2 \
+  --to 1.0.0 \
   --evidence "$HOME/should-not-exist.json" \
   >/dev/null 2>&1; then
   printf '%s\n' "Lifecycle recorder accepted the wrong starting version." >&2
