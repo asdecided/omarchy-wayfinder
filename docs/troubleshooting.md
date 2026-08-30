@@ -125,4 +125,9 @@ Promotion intent is recorded before the atomic rename. The next installer action
 
 Do not edit or delete transaction/provenance files during recovery. If the active digest matches neither side, Wayfinder fails closed and requires manual inspection. Removing the plugin or disabling the widget does not stop the independently supervised Router service.
 
-The lifecycle remains contract-validated for upgrade and rollback. The plugin now pins a real `2026.8.1` archive, but the stronger release-gated claim requires a recorded `2026.8.0` → `2026.8.1` → `2026.8.0` cycle between the two checksum-verified releases.
+The lifecycle remains contract-validated for upgrade and rollback. The plugin
+pins the immutable final DateVer Router `2026.8.1`; subsequent Router releases
+use SemVer. The next stronger release-gated claim requires a recorded
+`2026.8.1` → `1.0.0` → `2026.8.1` → `1.0.0` cycle between checksum-verified
+releases. Lifecycle decisions use exact versions and reviewed checksums, never
+ordering across the numbering change.

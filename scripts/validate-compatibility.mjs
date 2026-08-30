@@ -20,8 +20,7 @@ const [rawCompatibility, rawManifest, installer, workflow, readme, matrix, troub
 const compatibility = JSON.parse(rawCompatibility);
 const manifest = JSON.parse(rawManifest);
 const fullCommit = /^[0-9a-f]{40}$/;
-const semver = /^\d+\.\d+\.\d+$/;
-const calver = /^\d{4}\.\d+\.\d+$/;
+const semver = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/;
 
 assert.equal(compatibility.schemaVersion, 1);
 assert.match(compatibility.checkedAt, /^\d{4}-\d{2}-\d{2}$/);
@@ -34,7 +33,7 @@ assert.equal(compatibility.omarchy.manifestSchemaVersion, manifest.schemaVersion
 assert.equal(compatibility.quickshell.package, "quickshell");
 assert.match(compatibility.quickshell.versionFloor, semver);
 assert.match(compatibility.quickshell.contractCommit, fullCommit);
-assert.match(compatibility.router.release, calver);
+assert.match(compatibility.router.release, semver);
 assert.equal(compatibility.router.libc, "glibc");
 assert.deepEqual(compatibility.router.architectures, [
   "x86_64-unknown-linux-gnu",
@@ -42,7 +41,9 @@ assert.deepEqual(compatibility.router.architectures, [
 ]);
 assert.equal(compatibility.router.projectProfiles, "available");
 
-const installerVersion = installer.match(/^router_version="(\d{4}\.\d+\.\d+)"$/m)?.[1];
+const installerVersion = installer.match(
+  /^router_version="((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))"$/m
+)?.[1];
 assert.equal(installerVersion, compatibility.router.release);
 for (const target of compatibility.router.architectures) {
   const architecture = target.split("-")[0];

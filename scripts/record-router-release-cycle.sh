@@ -46,7 +46,7 @@ while (( $# > 0 )); do
 done
 
 for version in "$from_version" "$to_version"; do
-  [[ "$version" =~ ^[0-9]{4}\.[0-9]+\.[0-9]+$ ]] || {
+  [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
     printf 'Invalid Router release version: %s\n' "$version" >&2
     exit 2
   }
