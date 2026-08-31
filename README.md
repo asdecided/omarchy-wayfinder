@@ -37,7 +37,7 @@ omarchy plugin add https://github.com/asdecided/omarchy-wayfinder.git --enable
 Open the Wayfinder bar item and choose **Set up Wayfinder**. When the Router is
 missing, that explicit action runs the plugin's bounded bootstrap mode: it
 downloads the native
-`router-v2026.8.1` archive for the current architecture and verifies its pinned
+`router-v1.0.0` archive for the current architecture and verifies its pinned
 SHA-256 digest before extraction. It does not require Rust or Cargo. An existing
 `wayfinder-router` executable is never replaced.
 
@@ -67,10 +67,10 @@ Omarchy may set `WAYFINDER_BIN_DIR` when another user-owned binary directory is
 required. Router upgrades remain explicit plugin changes: the
 release version and both architecture digests are reviewed before these pins
 move. The installer records the exact release, target, archive digest, binary
-digest, and user-owned path for a binary that it installs. Router `2026.8.1` is
-the immutable final DateVer pin. Subsequent Router releases
-use SemVer; lifecycle operations treat exact versions and reviewed checksums as
-identities and do not compare the two numbering schemes.
+digest, and user-owned path for a binary that it installs. Router `1.0.0` is the
+current reviewed pin; `2026.8.1` is the immutable final DateVer release.
+Lifecycle operations treat exact versions and reviewed checksums as identities
+and do not compare the two numbering schemes.
 
 When a later reviewed plugin pin changes, upgrade only that plugin-owned binary
 with:
@@ -86,6 +86,10 @@ Interrupted transactions recover automatically; `./install.sh --recover-router`
 also makes that recovery explicit. Independently installed or modified Router
 binaries are never replaced. Promotion changes the on-disk executable; restart
 `wayfinder-router.service` from the panel after upgrade or rollback to run it.
+The first rollback after upgrading from `2026.8.1` restores that exact verified
+binary; running the explicit upgrade again returns to the reviewed `1.0.0`
+archive. The recorded archive and installed-binary digests are checked on every
+transition.
 
 Without `--enable`, Omarchy clones third-party plugins disabled so their source
 can be reviewed before enablement. The standard command above requests enablement
@@ -137,7 +141,7 @@ it does not touch the repository or unrelated project profiles.
 
 These controls are capability-gated through
 `wayfinder-router capabilities --json`. The pinned
-`router-v2026.8.1` release exposes authenticated local project profiles; when
+`router-v1.0.0` release exposes authenticated local project profiles; when
 that capability is absent or a different Router is on `PATH`, the panel fails
 closed instead of editing QML or project state.
 
