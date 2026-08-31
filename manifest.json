@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.asdecided.wayfinder",
   "name": "Wayfinder",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "Tom Ballard",
   "license": "Apache-2.0",
   "description": "Native AI model routing with in-panel setup, project profiles, prompt-free value, status, and controls for Omarchy.",

@@ -44,7 +44,7 @@ assert.equal(model.doctor("not-json").valid, false);
 const capabilityReport = model.capabilities(JSON.stringify({
   schema_version: "1",
   implementation: "rust",
-  version: "2026.8.1",
+  version: "1.0.0",
   native_commands: ["project setup", "project status", "project rollback"]
 }));
 assert.equal(capabilityReport.valid, true);
