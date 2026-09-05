@@ -10,6 +10,7 @@ BarWidget {
 
   readonly property var wayfinder: bar && bar.shell ? bar.shell.serviceFor(moduleName) : null
   property bool popupOpen: false
+  property bool setupOpen: false
   property bool rollbackArmed: false
   property double nowMs: Date.now()
 
@@ -42,6 +43,7 @@ BarWidget {
     popupOpen = false
     rollbackArmed = false
     projectToken.text = ""
+    setupPanel.clearSecrets()
   }
   function toggle() { popupOpen ? close() : open() }
   readonly property bool opened: popupOpen
@@ -151,10 +153,21 @@ BarWidget {
     owner: root
     open: root.popupOpen
     contentWidth: fittedContentWidth(Style.space(370), Style.space(430))
-    contentHeight: fittedContentHeight(content.implicitHeight, Style.space(760))
+    contentHeight: fittedContentHeight(root.setupOpen ? setupPanel.implicitHeight : content.implicitHeight, Style.space(760))
+
+    SetupPanel {
+      id: setupPanel
+      anchors.fill: parent
+      visible: root.setupOpen
+      service: root.wayfinder
+      bar: root.bar
+      foreground: root.foreground
+      onBack: root.setupOpen = false
+    }
 
     Column {
       id: content
+      visible: !root.setupOpen
       anchors.fill: parent
       spacing: Style.space(12)
 
@@ -207,6 +220,16 @@ BarWidget {
       }
 
       PanelSeparator { foreground: root.foreground }
+
+      Button {
+        text: root.wayfinder && root.wayfinder.onboarding.verifiedAt
+          ? "Setup and manage" : "Connect a provider"
+        visible: !!root.wayfinder && root.wayfinder.localEndpoint && root.wayfinder.binaryInstalled
+          && root.wayfinder.configExists
+        foreground: root.foreground
+        bordered: true
+        onClicked: { root.setupOpen = true; root.wayfinder.runOnboarding("status") }
+      }
 
       Column {
         width: parent.width
@@ -774,7 +797,8 @@ BarWidget {
           }
           Text {
             text: root.wayfinder && root.wayfinder.missingKeys.length > 0
-              ? root.wayfinder.missingKeys.length + " need credentials" : "Credentials ready"
+              ? root.wayfinder.missingKeys.length + " need credentials"
+              : root.wayfinder && root.wayfinder.onboarding.verifiedAt ? "Last test succeeded" : "Request test required"
             color: root.wayfinder && root.wayfinder.missingKeys.length > 0 ? Color.urgent : Qt.darker(root.foreground, 1.55)
             font.family: root.bar.fontFamily
             font.pixelSize: Style.font.caption
@@ -805,7 +829,7 @@ BarWidget {
             }
             Text {
               id: modelState
-              text: modelData.keyReady ? (Model.isLocalModel(modelData) ? "LOCAL" : "READY") : "KEY"
+              text: modelData.keyReady ? (Model.isLocalModel(modelData) ? "LOCAL" : "KEY SET") : "KEY"
               color: modelData.keyReady ? (Model.isLocalModel(modelData) ? Color.accent : root.foreground) : Color.urgent
               font.family: root.bar.fontFamily
               font.pixelSize: Style.font.caption

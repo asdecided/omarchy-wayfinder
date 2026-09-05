@@ -20,8 +20,10 @@ live in `asdecided/WayfinderRouter`.
 - `curl`, `tar`, `sha256sum`, `flock`, `systemd --user`, and `wl-copy` (provided by a
   standard Omarchy installation).
 
-The plugin never stores provider credentials. It reads only the gateway's
-prompt-free local status surfaces.
+Provider credentials are stored only in the desktop Secret Service keyring.
+The guided setup passes a key once over stdin; settings and status surfaces
+contain no key values. OpenAI setup additionally requires Python 3, `libsecret`
+and an unlocked Secret Service keyring.
 
 See the exact [supported versions and evidence](docs/compatibility.md) before
 installing on a moving Quattro system. Support claims are pinned to reviewed
@@ -40,6 +42,17 @@ downloads the native
 `router-v1.0.0` archive for the current architecture and verifies its pinned
 SHA-256 digest before extraction. It does not require Rust or Cargo. An existing
 `wayfinder-router` executable is never replaced.
+
+Then choose **Connect a provider** for guided OpenAI setup: save a Platform API
+key in the desktop keyring, discover and select a model, explicitly activate
+hosted routing, and send a small test request. Success requires a matching
+Router delivery receipt. **Router ready** alone does not mean a model works.
+The panel also exposes agent connection recipes, repair, upgrade, rollback,
+and guided removal. Follow the [complete setup and recovery guide](docs/setup.md).
+
+Guided policy changes are limited to the unchanged local starter or an unchanged
+policy owned by this assistant. Existing custom policies retain the manual
+configuration workflow and are never overwritten.
 
 The same explicit, resumable first-run flow then:
 
@@ -114,8 +127,9 @@ Point compatible applications at the endpoint shown in the panel:
 export OPENAI_BASE_URL=http://127.0.0.1:8088/v1
 ```
 
-Provider keys remain in the environment or the existing reviewed credential
-boundary referenced by the Wayfinder configuration.
+Existing provider keys remain in their configured credential boundary. Guided
+OpenAI setup uses a unique Secret Service item and the Router's bounded
+credential-command resolver. It does not import existing agent credentials.
 
 ## Project profiles
 
