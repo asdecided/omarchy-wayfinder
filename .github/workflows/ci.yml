@@ -22,6 +22,8 @@ jobs:
         run: node scripts/validate-compatibility.mjs
       - name: Test presentation model
         run: node test/model.test.mjs
+      - name: Test guided setup failures and credential boundaries
+        run: python3 -m unittest discover -s test -p '*_test.py' -v
       - name: Test pinned native Router installation
         run: bash test/install.test.sh
       - name: Test atomic Router upgrade and rollback
@@ -85,6 +87,10 @@ jobs:
           pipx install aider-chat==0.86.1
       - name: Build the candidate Router contract
         run: cargo build --locked --manifest-path .router-source/rust/Cargo.toml --bin wayfinder-router
+      - name: Test guided setup with real Router delivery and restart
+        env:
+          WAYFINDER_ROUTER_BIN: ${{ github.workspace }}/.router-source/rust/target/debug/wayfinder-router
+        run: python3 -m unittest discover -s test -p '*_test.py' -v
       - name: Run a real Codex tool round-trip
         env:
           WAYFINDER_ROUTER_BIN: ${{ github.workspace }}/.router-source/rust/target/debug/wayfinder-router

@@ -15,6 +15,13 @@ Item {
   property string endpoint: Model.DEFAULT_ENDPOINT
   property int refreshIntervalSec: 15
   property string configPath: ""
+  property var onboarding: ({})
+  property string onboardingError: ""
+  property string onboardingAction: ""
+  property bool onboardingSilent: false
+  property string pendingProviderKey: ""
+  property string connectionRecipe: ""
+  readonly property bool onboardingBusy: onboardingProcess.running || recipeProcess.running
   property string projectRoot: ""
   property string defaultConfigPath: ""
   readonly property string effectiveConfigPath: String(configPath || "").trim() !== ""
@@ -72,7 +79,7 @@ Item {
     || recentProcess.running || savingsProcess.running || actionProcess.running
     || defaultConfigProcess.running || configProbeProcess.running || doctorProcess.running
     || capabilityProcess.running || projectStatusProcess.running || projectActionProcess.running
-    || projectValueProcess.running
+    || projectValueProcess.running || onboardingBusy
   readonly property bool projectBusy: capabilityProcess.running || projectStatusProcess.running
     || projectActionProcess.running || projectValueProcess.running
   readonly property bool localEndpoint: Model.serviceInstallArguments(endpoint, effectiveConfigPath) !== null
@@ -87,7 +94,7 @@ Item {
     unitInstalled: unitInstalled,
     systemdActive: systemdActive,
     reachable: reachable,
-    missingEnvironment: doctorMissingEnvironment
+    missingEnvironment: reachable ? missingKeys : doctorMissingEnvironment
   })
   readonly property string setupDetail: doctorError !== "" ? doctorError : setupState.detail
   readonly property var projectState: Model.projectState({
@@ -145,6 +152,7 @@ Item {
   }
 
   function refresh() {
+    if (onboardingBusy || actionProcess.running || setupRequested) return
     if (!binaryProcess.running) binaryProcess.running = true
     if (!unitProcess.running) unitProcess.running = true
     if (!systemdProcess.running) systemdProcess.running = true
@@ -173,6 +181,45 @@ Item {
     if (binaryInstalled && !capabilityChecked && !capabilityProcess.running) refreshCapabilities()
     if (projectSupported && projectRoot !== "" && !projectActionProcess.running) refreshProject()
     if (projectState.ready && projectReport.workspaceId !== "") refreshProjectValue()
+    if (localEndpoint && binaryInstalled && configExists) runOnboarding("status", "", true)
+  }
+
+  function runOnboarding(kind, value, background) {
+    if (!localEndpoint || !binaryInstalled || effectiveConfigPath === ""
+        || pluginSourceDir === "" || onboardingBusy || actionProcess.running) return
+    onboardingAction = kind
+    onboardingSilent = background === true
+    if (kind !== "status") onboardingError = ""
+    pendingProviderKey = kind === "discover" ? String(value || "") : ""
+    var args = ["python3", pluginSourceDir + "/scripts/onboarding.py", kind,
+      "--router", binaryPath, "--config", effectiveConfigPath, "--endpoint", endpoint]
+    if (kind === "activate") args = args.concat(["--model", String(value || "")])
+    onboardingProcess.command = args
+    onboardingProcess.running = true
+  }
+
+  function cancelOnboarding() {
+    pendingProviderKey = ""
+    if (onboardingProcess.running) onboardingProcess.signal(15)
+    if (recipeProcess.running) recipeProcess.signal(15)
+  }
+
+  function loadRecipe(agent) {
+    if (!localEndpoint || !binaryInstalled || onboardingBusy || actionProcess.running
+        || ["codex", "claude-code", "opencode", "pi", "aider"].indexOf(agent) < 0) return
+    connectionRecipe = ""
+    recipeProcess.command = [binaryPath, "connect", agent, "--endpoint", endpoint]
+    recipeProcess.running = true
+  }
+
+  function maintain(kind) {
+    if (!localEndpoint || busy || pluginSourceDir === "") return
+    if (["upgrade", "rollback", "recover"].indexOf(kind) >= 0)
+      runAction(kind, [pluginSourceDir + "/install.sh", "--" + kind + "-router"])
+    else if (kind === "uninstall-service")
+      runAction(kind, [binaryPath, "service", "uninstall"])
+    else if (kind === "remove-binary" && !unitInstalled && !systemdActive)
+      runAction(kind, [pluginSourceDir + "/uninstall.sh", "--remove-owned-router"])
   }
 
   function probeConfig() {
@@ -223,7 +270,7 @@ Item {
       setupStage = "complete"
       actionMessage = doctorMissingEnvironment.length > 0
         ? "Wayfinder is running; some provider environment is still missing."
-        : "Wayfinder is ready."
+        : "Router ready. Connect a provider and test a request."
       actionError = ""
       refresh()
     }
@@ -786,7 +833,7 @@ Item {
           root.setupStage = "complete"
           root.actionMessage = root.doctorMissingEnvironment.length > 0
             ? "Service started. Some provider environment is still missing."
-            : "Wayfinder setup completed."
+            : "Router ready. Connect a provider and test a request."
         }
       } else {
         root.actionMessage = ""
@@ -795,6 +842,43 @@ Item {
         root.setupStage = "failed"
       }
       actionRefreshTimer.restart()
+    }
+  }
+
+  Process {
+    id: onboardingProcess
+    stdinEnabled: true
+    stdout: StdioCollector { id: onboardingOutput; waitForEnd: true }
+    // Helper emits only fixed, secret-free JSON. Never render raw stderr.
+    stderr: StdioCollector { waitForEnd: true }
+    onStarted: {
+      if (root.onboardingAction === "discover")
+        onboardingProcess.write(root.pendingProviderKey + "\n")
+      root.pendingProviderKey = ""
+    }
+    onExited: function(exitCode) {
+      root.pendingProviderKey = ""
+      var result = null
+      try { result = JSON.parse(onboardingOutput.text) } catch (_) {}
+      if (exitCode === 0 && result && result.ok === true) {
+        root.onboarding = result
+        if (!root.onboardingSilent) root.onboardingError = ""
+      } else {
+        root.onboardingError = result && typeof result.error === "string"
+          ? result.error : "Setup did not finish. Recheck setup or repair the service."
+        if (root.onboardingAction === "status") root.onboarding = ({})
+      }
+      if (root.onboardingAction !== "status") actionRefreshTimer.restart()
+    }
+  }
+
+  Process {
+    id: recipeProcess
+    stdout: StdioCollector { id: recipeOutput; waitForEnd: true }
+    stderr: StdioCollector { waitForEnd: true }
+    onExited: function(exitCode) {
+      root.connectionRecipe = exitCode === 0 ? String(recipeOutput.text).slice(0, 16384)
+        : "The Router could not produce this connection recipe. Check its version and endpoint."
     }
   }
 }

@@ -409,7 +409,7 @@ function setupState(state) {
       detail: "The service is active but its loopback gateway is not reachable." + missingDetail }
   }
   return { ready: true, actionable: true, step: "ready", status: "",
-    title: "Wayfinder is ready", action: "Restart service",
+    title: "Router is running", action: "Restart service",
     detail: missingDetail.trim() }
 }
 
