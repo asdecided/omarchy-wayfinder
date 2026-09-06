@@ -19,7 +19,7 @@ jobs:
     container: archlinux:base
     steps:
       - name: Install build dependencies
-        run: pacman -Syu --noconfirm base-devel cmake ninja qt6-base libsecret gnome-keyring git
+        run: pacman -Syu --noconfirm base-devel cmake ninja qt6-base qt6-wayland libsecret gnome-keyring git
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
