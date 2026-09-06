@@ -106,7 +106,7 @@ To reverse an agent connection:
   returns to model selection. Disconnect restores the starter instead.
 - **Cancellation:** stops the active Rust setup command; recheck state, then repair or
   disconnect. A committed policy change is not silently undone on cancellation.
-- **Custom policy detected:** the assistant stops before editing it. Your custom
+- **Custom policy detected:** setup stops before editing it. Your custom
   configuration requires the existing manual workflow; a starter-policy reset
   is not a general-purpose migration tool.
 

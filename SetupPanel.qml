@@ -355,7 +355,7 @@ Item {
         }
         Button {
           text: root.armedAction === "uninstall-service" ? "Confirm service removal" : "Remove service"
-          enabled: !!root.service && !root.service.busy && root.service.unitInstalled
+          enabled: !!root.service && !root.service.busy && root.service.unitInstalled && !root.state.owned
           foreground: root.foreground
           onClicked: root.confirmAction("uninstall-service")
         }

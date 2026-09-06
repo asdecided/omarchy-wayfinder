@@ -220,7 +220,7 @@ Item {
     if (!localEndpoint || busy || pluginSourceDir === "") return
     if (["upgrade", "rollback", "recover"].indexOf(kind) >= 0)
       runAction(kind, [pluginSourceDir + "/install.sh", "--" + kind + "-router"])
-    else if (kind === "uninstall-service")
+    else if (kind === "uninstall-service" && !onboarding.owned)
       runAction(kind, [binaryPath, "service", "uninstall"])
     else if (kind === "remove-binary" && !unitInstalled && !systemdActive)
       runAction(kind, [pluginSourceDir + "/uninstall.sh", "--remove-owned-router"])
