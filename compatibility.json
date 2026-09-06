@@ -3,7 +3,7 @@
   "checkedAt": "2026-09-06",
   "plugin": {
     "id": "io.github.asdecided.wayfinder",
-    "version": "0.4.0"
+    "version": "0.4.1"
   },
   "omarchy": {
     "channel": "quattro",

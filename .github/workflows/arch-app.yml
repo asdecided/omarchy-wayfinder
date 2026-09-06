@@ -7,6 +7,9 @@ on:
     paths: ['app/**', 'packaging/arch/**', '.github/workflows/arch-app.yml']
   release:
     types: [published]
+defaults:
+  run:
+    shell: bash
 permissions:
   contents: read
 jobs:
@@ -27,10 +30,10 @@ jobs:
         run: |
           . packaging/arch/PKGBUILD
           test "$RELEASE_TAG" = "app-v$pkgver"
-          git merge-base --is-ancestor HEAD origin/main
+          git -c safe.directory="$GITHUB_WORKSPACE" merge-base --is-ancestor HEAD origin/main
       - name: Prepare exact source and builder
         run: |
-          git archive --prefix=wayfinder-source/ HEAD | gzip -n > packaging/arch/wayfinder-source.tar.gz
+          git -c safe.directory="$GITHUB_WORKSPACE" archive --prefix=wayfinder-source/ HEAD | gzip -n > packaging/arch/wayfinder-source.tar.gz
           digest=$(sha256sum packaging/arch/wayfinder-source.tar.gz | cut -d ' ' -f 1)
           sed -i "s/@SOURCE_SHA256@/$digest/" packaging/arch/PKGBUILD
           useradd -m builder

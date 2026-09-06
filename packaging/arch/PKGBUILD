@@ -22,7 +22,7 @@ build() {
   cmake --build "$srcdir/build"
 }
 check() {
-  ctest --test-dir "$srcdir/build" --output-on-failure
+  WAYFINDER_TEST_ROUTER="$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/wayfinder-router" ctest --test-dir "$srcdir/build" --output-on-failure
   QT_QPA_PLATFORM=offscreen "$srcdir/build/wayfinder" --smoke-test
   "$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/wayfinder-router" --version
 }

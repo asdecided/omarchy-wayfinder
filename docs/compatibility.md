@@ -6,7 +6,7 @@ Checked: 2026-08-30.
 
 | Surface | Supported contract | Evidence in this repository |
 | --- | --- | --- |
-| Wayfinder plugin | `0.4.0`, manifest schema `1` | Local package validation plus the official Omarchy validator |
+| Wayfinder plugin | `0.4.1`, manifest schema `1` | Local package validation plus the official Omarchy validator |
 | Omarchy | Quattro `4.0.0.alpha` at [`f4f3d4c71a0a5c392b20ce05291531881a1b3bfe`](https://github.com/basecamp/omarchy/commit/f4f3d4c71a0a5c392b20ce05291531881a1b3bfe) | CI checks out that exact source commit and runs its `omarchy-plugin-validate` against this plugin |
 | Quickshell | Omarchy-packaged `quickshell` `0.3.1` or newer | The pinned Omarchy source contains the reviewed switch to packaged Quickshell at [`2c593dbbaad67698e7b9b0809d082d86540a7a1c`](https://github.com/basecamp/omarchy/commit/2c593dbbaad67698e7b9b0809d082d86540a7a1c); model and package tests run without a graphical shell |
 | Router | [`router-v1.1.0`](https://github.com/asdecided/WayfinderRouter/releases/tag/router-v1.1.0) at [`3fd791956504ef04ed618c54c8238047f5d810f9`](https://github.com/asdecided/WayfinderRouter/commit/3fd791956504ef04ed618c54c8238047f5d810f9) | Native archive download, SHA-256 verification, layout inspection, execution, provenance, no-clobber, and ownership-checked removal tests |
