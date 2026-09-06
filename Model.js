@@ -54,12 +54,13 @@ function capabilities(raw) {
     ? value.native_commands.map(String) : []
   if (!value || String(value.schema_version || "") !== "1"
       || String(value.implementation || "") === "" || !Array.isArray(value.native_commands)) {
-    return { valid: false, version: "", nativeCommands: [], projectSupported: false }
+    return { valid: false, version: "", nativeCommands: [], projectSupported: false, setupSupported: false }
   }
   return {
     valid: true,
     version: String(value.version || ""),
     nativeCommands: nativeCommands,
+    setupSupported: value.setup_schema_version === 1 && nativeCommands.indexOf("setup") !== -1,
     projectSupported: nativeCommands.indexOf("project setup") !== -1
       && nativeCommands.indexOf("project status") !== -1
       && nativeCommands.indexOf("project rollback") !== -1

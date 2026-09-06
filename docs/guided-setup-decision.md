@@ -1,6 +1,6 @@
 # Guided installation lifecycle
 
-Status: proposed implementation, 2026-09-05.
+Status: revised implementation, 2026-09-06.
 
 The fresh-install acceptance run reached an online offline-mode gateway with
 an untested `local` destination and no next step for OpenAI. The former success
@@ -12,13 +12,17 @@ no-clobber policy creation and existing-service repair are reused as principles.
 The Omarchy implementation uses Linux Secret Service instead of Apple Keychain;
 it does not port the Mac UI, mobile pairing, or account-provider platform.
 
-The new panel orchestrates the released Router's doctor, service and connect
-commands. The existing Router remains the only routing/delivery authority.
+The panel calls the native Rust Router's setup, service and connect commands.
+Credential discovery, policy mutation, verification and recovery live in the
+Router CLI. The initial Python helper and its tests have been removed.
+A Router release advertising setup_schema_version 1 is required; the existing
+1.0.0 archive does not implement this capability. The plugin must not ship this
+flow until its checksum-pinned archives are updated to that release. The existing Router remains the only routing/delivery authority.
 Provider setup is explicitly distinct from activating hosted routing. The first
 workflow handles one OpenAI model, with no inferred routing ladder. Only an exact
-starter or an unchanged assistant-owned policy is eligible for replacement.
+starter or an unchanged setup-owned policy is eligible for replacement.
 
-The helper keeps a credential item identity and stage journal, with no key values.
+The Rust setup command keeps a credential item identity and stage journal, with no key values.
 It records activation before policy promotion so interruption is recoverable.
 The key lives in Secret Service and reaches the Router through its existing
 bounded api_key_cmd resolver. Key deletion stops the running service first.

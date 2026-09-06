@@ -33,7 +33,6 @@ for (const required of [
   "Model.js",
   "RouteMark.qml",
   "SetupPanel.qml",
-  "scripts/onboarding.py",
   "docs/setup.md",
   "install.sh",
   "uninstall.sh",

@@ -333,3 +333,6 @@ assert.equal(model.serviceInstallArguments("https://router.example.com", ""), nu
 assert.equal(model.savingsLabel(model.savings('{"requests":4,"saved":1.234,"saved_pct":12.5,"unit":"usd","priced":true}')), "$1.23 saved");
 
 console.log("Wayfinder Omarchy model tests passed");
+
+assert.equal(model.capabilities(JSON.stringify({schema_version:"1", implementation:"rust", native_commands:["setup"], setup_schema_version:1})).setupSupported, true)
+assert.equal(model.capabilities(JSON.stringify({schema_version:"1", implementation:"rust", native_commands:["setup"]})).setupSupported, false)
