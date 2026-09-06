@@ -1,11 +1,8 @@
 # From installation to your first request
 
-> Development status: guided provider setup now runs in the Rust CLI
-> ([Router PR #219](https://github.com/asdecided/WayfinderRouter/pull/219)). This PR
-> requires a Router release advertising `setup_schema_version: 1` and an update
-> to the plugin’s verified archive pins. Router 1.0.0 does not provide it. Until
-> that dependency lands, provider controls remain disabled; this is not a
-> released installation guide for the new flow.
+Guided OpenAI setup requires Router 1.1.0, included in this plugin’s verified
+installation pin. Existing installations must upgrade their Router before the
+provider controls become available.
 
 Install through Omarchy's plugin manager:
 

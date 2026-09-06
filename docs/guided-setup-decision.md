@@ -15,9 +15,8 @@ it does not port the Mac UI, mobile pairing, or account-provider platform.
 The panel calls the native Rust Router's setup, service and connect commands.
 Credential discovery, policy mutation, verification and recovery live in the
 Router CLI. The initial Python helper and its tests have been removed.
-A Router release advertising setup_schema_version 1 is required; the existing
-1.0.0 archive does not implement this capability. The plugin must not ship this
-flow until its checksum-pinned archives are updated to that release. The existing Router remains the only routing/delivery authority.
+Router 1.1.0 advertises setup_schema_version 1 and is the checksum-pinned
+installation dependency. The Router remains the only routing/delivery authority.
 Provider setup is explicitly distinct from activating hosted routing. The first
 workflow handles one OpenAI model, with no inferred routing ladder. Only an exact
 starter or an unchanged setup-owned policy is eligible for replacement.

@@ -2,11 +2,11 @@
 set -euo pipefail
 
 plugin_id="io.github.asdecided.wayfinder"
-router_version="1.0.0"
+router_version="1.1.0"
 router_release_tag="router-v${router_version}"
 router_release_base_url="https://github.com/asdecided/WayfinderRouter/releases/download/${router_release_tag}"
-router_sha256_x86_64="ed1c851d134222b357a496852a2b3df9931fdc40dde2bb0f0db899302604112a"
-router_sha256_aarch64="c44c8e765b68b6ceae51526b28fa8ae268dc7693f18895b90602b4881ac68fb6"
+router_sha256_x86_64="cdbfc01872d967236f3ce742d546b2f3891b8ac10b05ef1a92dd80468ebaa1bf"
+router_sha256_aarch64="2c23a78ab91e06edaf8acb38c6dd5fa3990fa96f26e01a571a6136a9653e2e05"
 source_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 plugin_dir="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/$plugin_id"
 router_bin_dir="${WAYFINDER_BIN_DIR:-$HOME/.local/bin}"
