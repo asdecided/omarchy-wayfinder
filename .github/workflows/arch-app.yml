@@ -1,0 +1,82 @@
+name: Arch desktop package
+on:
+  pull_request:
+    paths: ['app/**', 'packaging/arch/**', '.github/workflows/arch-app.yml']
+  push:
+    branches: [main]
+    paths: ['app/**', 'packaging/arch/**', '.github/workflows/arch-app.yml']
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  package:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'app-v')
+    runs-on: ubuntu-24.04
+    container: archlinux:base
+    steps:
+      - name: Install build dependencies
+        run: pacman -Syu --noconfirm base-devel cmake ninja qt6-base libsecret gnome-keyring git
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify release version
+        if: github.event_name == 'release'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          . packaging/arch/PKGBUILD
+          test "$RELEASE_TAG" = "app-v$pkgver"
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Prepare exact source and builder
+        run: |
+          git archive --prefix=wayfinder-source/ HEAD | gzip -n > packaging/arch/wayfinder-source.tar.gz
+          digest=$(sha256sum packaging/arch/wayfinder-source.tar.gz | cut -d ' ' -f 1)
+          sed -i "s/@SOURCE_SHA256@/$digest/" packaging/arch/PKGBUILD
+          useradd -m builder
+          chown -R builder:builder .
+      - name: Build and test native package
+        run: su builder -c "cd '$GITHUB_WORKSPACE/packaging/arch' && makepkg --noconfirm"
+      - name: Verify installation, reinstallation and removal
+        run: |
+          pacman -U --noconfirm packaging/arch/wayfinder-*.pkg.tar.zst
+          test "$(/usr/bin/wayfinder-router --version)" = 'wayfinder-router 1.1.0'
+          su builder -c 'QT_QPA_PLATFORM=offscreen /usr/bin/wayfinder --smoke-test'
+          test -f /usr/share/applications/wayfinder.desktop
+          systemd-analyze verify /usr/lib/systemd/user/wayfinder-router.service
+          su builder -c 'mkdir -p ~/.config/wayfinder; /usr/bin/wayfinder-router init --preset local --path ~/.config/wayfinder/wayfinder-router.toml'
+          sha256sum /home/builder/.config/wayfinder/wayfinder-router.toml > /tmp/config.sha256
+          pacman -U --noconfirm packaging/arch/wayfinder-*.pkg.tar.zst
+          sha256sum -c /tmp/config.sha256
+          pacman -Qk wayfinder
+          pacman -R --noconfirm wayfinder
+          test ! -e /usr/bin/wayfinder
+          test ! -e /usr/bin/wayfinder-router
+          sha256sum -c /tmp/config.sha256
+      - name: Prepare downloads
+        run: |
+          mkdir downloads
+          cp packaging/arch/*.pkg.tar.zst packaging/arch/PKGBUILD packaging/arch/wayfinder-source.tar.gz downloads/
+          cd downloads
+          sha256sum *.pkg.tar.zst PKGBUILD wayfinder-source.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wayfinder-arch-x86_64
+          path: downloads/*
+  publish:
+    if: github.event_name == 'release'
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wayfinder-arch-x86_64
+          path: downloads
+      - name: Attach tested package to published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" downloads/*
