@@ -1,13 +1,14 @@
 # Wayfinder for Omarchy
 
-Wayfinder is the model router built for Omarchy. One plugin installs the native
-Rust Router, gives supported coding agents a shared local endpoint, and exposes
-health, delivery receipts, local-versus-hosted distribution, model readiness,
-global savings, and honest per-project value evidence in the Omarchy bar.
+Wayfinder gives coding agents a shared local AI routing endpoint. The standalone
+[Arch desktop app](docs/arch-desktop.md) handles OpenAI onboarding, models,
+service controls, project profiles and diagnostics. Pacman owns the application
+and Router binaries; the optional Omarchy plugin shows status and opens the app.
 
-The plugin is the flagship product surface; the independently supervised
-`wayfinder-router` process remains the only routing authority. Reloading or
-disabling the Omarchy shell does not interrupt requests.
+The desktop app is being introduced alongside the existing plugin installation
+path below. It is not yet listed in the AUR or Omarchy's application catalogue.
+The independently supervised Rust `wayfinder-router` remains the routing and
+setup authority. Closing the app or reloading the shell does not stop requests.
 
 Wayfinder is Omarchy-primary, not Omarchy-only. The portable Router and the
 governing [Omarchy-first strategy](https://github.com/asdecided/WayfinderRouter/blob/main/decisions/WF-ADR-0073-omarchy-first-portable-core.md)
@@ -22,7 +23,7 @@ live in `asdecided/WayfinderRouter`.
 
 Provider credentials are stored only in the desktop Secret Service keyring.
 The guided setup passes a key once over stdin; settings and status surfaces
-contain no key values. OpenAI setup additionally requires Python 3, `libsecret`
+contain no key values. OpenAI setup additionally requires `libsecret`
 and an unlocked Secret Service keyring.
 
 See the exact [supported versions and evidence](docs/compatibility.md) before
