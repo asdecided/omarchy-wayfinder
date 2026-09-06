@@ -222,13 +222,17 @@ BarWidget {
       PanelSeparator { foreground: root.foreground }
 
       Button {
-        text: root.wayfinder && root.wayfinder.onboarding.verifiedAt
+        text: root.wayfinder && root.wayfinder.appInstalled ? "Open Wayfinder"
+          : root.wayfinder && root.wayfinder.onboarding.verifiedAt
           ? "Setup and manage" : "Connect a provider"
-        visible: !!root.wayfinder && root.wayfinder.localEndpoint && root.wayfinder.binaryInstalled
-          && root.wayfinder.configExists
+        visible: !!root.wayfinder && root.wayfinder.localEndpoint
+          && (root.wayfinder.appInstalled || (root.wayfinder.binaryInstalled && root.wayfinder.configExists))
         foreground: root.foreground
         bordered: true
-        onClicked: { root.setupOpen = true; root.wayfinder.runOnboarding("status") }
+        onClicked: {
+          if (root.wayfinder.appInstalled) root.wayfinder.openApplication()
+          else { root.setupOpen = true; root.wayfinder.runOnboarding("status") }
+        }
       }
 
       Column {

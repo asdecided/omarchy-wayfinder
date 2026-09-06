@@ -29,6 +29,12 @@ Item {
 
   property bool binaryInstalled: false
   property string binaryPath: ""
+  property bool appInstalled: false
+  readonly property bool packagedRouter: binaryPath === "/usr/bin/wayfinder-router"
+
+  function openApplication() {
+    if (appInstalled) Quickshell.execDetached(["/usr/bin/wayfinder"])
+  }
   property bool unitInstalled: false
   property bool systemdActive: false
   property bool reachable: false
@@ -153,6 +159,7 @@ Item {
   }
 
   function refresh() {
+    if (!appProbe.running) appProbe.running = true
     if (onboardingBusy || actionProcess.running || setupRequested) return
     if (!binaryProcess.running) binaryProcess.running = true
     if (!unitProcess.running) unitProcess.running = true
@@ -217,6 +224,10 @@ Item {
   }
 
   function maintain(kind) {
+    if (packagedRouter) {
+      onboardingError = "Manage this installation with Wayfinder and your Arch package manager."
+      return
+    }
     if (!localEndpoint || busy || pluginSourceDir === "") return
     if (["upgrade", "rollback", "recover"].indexOf(kind) >= 0)
       runAction(kind, [pluginSourceDir + "/install.sh", "--" + kind + "-router"])
@@ -504,9 +515,15 @@ Item {
   }
 
   Process {
+    id: appProbe
+    command: ["test", "-x", "/usr/bin/wayfinder"]
+    onExited: function(exitCode) { root.appInstalled = exitCode === 0 }
+  }
+
+  Process {
     id: binaryProcess
     command: ["bash", "-lc",
-      "command -v wayfinder-router || { candidate=\"${WAYFINDER_BIN_DIR:-$HOME/.local/bin}/wayfinder-router\"; test -x \"$candidate\" && printf '%s\\n' \"$candidate\"; }"]
+      "if test -x /usr/bin/wayfinder-router; then printf '/usr/bin/wayfinder-router\\n'; else command -v wayfinder-router || { candidate=\"${WAYFINDER_BIN_DIR:-$HOME/.local/bin}/wayfinder-router\"; test -x \"$candidate\" && printf '%s\\n' \"$candidate\"; }; fi"]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
