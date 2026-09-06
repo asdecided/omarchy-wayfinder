@@ -1,0 +1,11 @@
+[Unit]
+Description=Wayfinder AI Router
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/wayfinder-router serve --config %h/.config/wayfinder/wayfinder-router.toml --host 127.0.0.1 --port 8088
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

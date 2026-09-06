@@ -1,0 +1,35 @@
+# Maintainer: Tom Ballard
+pkgname=wayfinder
+pkgver=0.5.0
+pkgrel=1
+pkgdesc='Native desktop setup and management for the Wayfinder Rust AI router'
+arch=('x86_64')
+url='https://github.com/asdecided/omarchy-wayfinder'
+license=('Apache-2.0')
+options=('!debug')
+depends=('qt6-base' 'glibc' 'gcc-libs' 'libsecret' 'gnome-keyring' 'systemd' 'git')
+makedepends=('cmake' 'ninja')
+provides=('wayfinder-router=1.1.0')
+conflicts=('wayfinder-router' 'wayfinder-router-bin')
+# CI supplies the exact reviewed source archive beside this PKGBUILD.
+source=('wayfinder-source.tar.gz')
+sha256sums=('@SOURCE_SHA256@')
+source_x86_64=('https://github.com/asdecided/WayfinderRouter/releases/download/router-v1.1.0/wayfinder-router-x86_64-unknown-linux-gnu.tar.gz')
+sha256sums_x86_64=('cdbfc01872d967236f3ce742d546b2f3891b8ac10b05ef1a92dd80468ebaa1bf')
+build() {
+  cmake -S "$srcdir/wayfinder-source/app" -B "$srcdir/build" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build "$srcdir/build"
+}
+check() {
+  ctest --test-dir "$srcdir/build" --output-on-failure
+  QT_QPA_PLATFORM=offscreen "$srcdir/build/wayfinder" --smoke-test
+  "$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/wayfinder-router" --version
+}
+package() {
+  DESTDIR="$pkgdir" cmake --install "$srcdir/build"
+  install -Dm755 "$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/wayfinder-router" "$pkgdir/usr/bin/wayfinder-router"
+  install -Dm644 "$srcdir/wayfinder-source/packaging/arch/wayfinder-router.service" "$pkgdir/usr/lib/systemd/user/wayfinder-router.service"
+  install -Dm644 "$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/LICENSE" "$pkgdir/usr/share/licenses/wayfinder/LICENSE"
+  install -Dm644 "$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/NOTICE" "$pkgdir/usr/share/licenses/wayfinder/NOTICE"
+}
