@@ -20,7 +20,7 @@ Item {
   onVisibleChanged: if (!visible) clearSecrets()
 
   function connectProvider() {
-    if (!service || working || providerKey.text === "") return
+    if (!service || !service.setupSupported || working || providerKey.text === "") return
     var value = providerKey.text
     providerKey.text = ""
     service.runOnboarding("discover", value)
@@ -80,10 +80,21 @@ Item {
         }
       }
 
+      Text {
+        width: parent.width
+        visible: !!root.service && !root.service.setupSupported
+        text: "Guided setup requires a newer Router. See the setup guide for the compatible build."
+        wrapMode: Text.Wrap
+        color: Color.urgent
+        font.family: root.bar.fontFamily
+        font.pixelSize: Style.font.bodySmall
+      }
+
       Column {
         width: parent.width
         spacing: Style.space(8)
         visible: root.page === "provider"
+        enabled: !!root.service && root.service.setupSupported
 
         Text {
           width: parent.width

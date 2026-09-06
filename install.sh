@@ -46,7 +46,6 @@ if [[ "$installer_mode" == "full"
     install -m 0644 "$source_dir/$file" "$plugin_dir/$file"
   done
   install -d -m 0755 "$plugin_dir/scripts"
-  install -m 0644 "$source_dir/scripts/onboarding.py" "$plugin_dir/scripts/onboarding.py"
   install -m 0644 "$source_dir/scripts/router-lifecycle.sh" "$plugin_dir/scripts/router-lifecycle.sh"
   install -m 0755 "$source_dir/install.sh" "$plugin_dir/install.sh"
   install -m 0755 "$source_dir/uninstall.sh" "$plugin_dir/uninstall.sh"

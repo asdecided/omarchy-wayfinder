@@ -37,6 +37,7 @@ Item {
   property bool operatorDataAvailable: false
   property bool dryRun: false
   property bool capabilityChecked: false
+  property bool setupSupported: false
   property bool projectSupported: false
   property string routerVersion: ""
 
@@ -187,12 +188,15 @@ Item {
   function runOnboarding(kind, value, background) {
     if (!localEndpoint || !binaryInstalled || effectiveConfigPath === ""
         || pluginSourceDir === "" || onboardingBusy || actionProcess.running) return
+    if (!setupSupported) {
+      onboardingError = "This Router does not support guided setup. Install a Router release with setup schema 1; see the setup guide."
+      return
+    }
     onboardingAction = kind
     onboardingSilent = background === true
     if (kind !== "status") onboardingError = ""
     pendingProviderKey = kind === "discover" ? String(value || "") : ""
-    var args = ["python3", pluginSourceDir + "/scripts/onboarding.py", kind,
-      "--router", binaryPath, "--config", effectiveConfigPath, "--endpoint", endpoint]
+    var args = [binaryPath, "setup", kind, "--config", effectiveConfigPath, "--endpoint", endpoint]
     if (kind === "activate") args = args.concat(["--model", String(value || "")])
     onboardingProcess.command = args
     onboardingProcess.running = true
@@ -521,6 +525,7 @@ Item {
         root.binaryPath = ""
         root.binaryInstalled = false
         root.capabilityChecked = false
+        root.setupSupported = false
         root.projectSupported = false
         root.routerVersion = ""
       }
@@ -568,6 +573,8 @@ Item {
       var report = Model.capabilities(capabilityStdout.text)
       root.capabilityChecked = true
       root.routerVersion = report.valid ? report.version : ""
+      root.setupSupported = exitCode === 0 && report.valid && report.setupSupported
+      if (root.setupSupported && root.configExists) Qt.callLater(function() { root.runOnboarding("status", "", true) })
       root.projectSupported = exitCode === 0 && report.valid && report.projectSupported
       if (!root.projectSupported) {
         root.projectChecked = false
@@ -849,7 +856,7 @@ Item {
     id: onboardingProcess
     stdinEnabled: true
     stdout: StdioCollector { id: onboardingOutput; waitForEnd: true }
-    // Helper emits only fixed, secret-free JSON. Never render raw stderr.
+    // Rust setup command emits only fixed, secret-free JSON. Never render raw stderr.
     stderr: StdioCollector { waitForEnd: true }
     onStarted: {
       if (root.onboardingAction === "discover")

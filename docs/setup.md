@@ -1,5 +1,12 @@
 # From installation to your first request
 
+> Development status: guided provider setup now runs in the Rust CLI
+> ([Router PR #219](https://github.com/asdecided/WayfinderRouter/pull/219)). This PR
+> requires a Router release advertising `setup_schema_version: 1` and an update
+> to the plugin’s verified archive pins. Router 1.0.0 does not provide it. Until
+> that dependency lands, provider controls remain disabled; this is not a
+> released installation guide for the new flow.
+
 Install through Omarchy's plugin manager:
 
 ```sh
@@ -97,7 +104,7 @@ To reverse an agent connection:
 - **Interrupted activation:** use **Repair service**. If the policy had already
   been promoted, repair starts it and returns to the test step. If not, setup
   returns to model selection. Disconnect restores the starter instead.
-- **Cancellation:** stops the active helper; recheck state, then repair or
+- **Cancellation:** stops the active Rust setup command; recheck state, then repair or
   disconnect. A committed policy change is not silently undone on cancellation.
 - **Custom policy detected:** the assistant stops before editing it. Your custom
   configuration requires the existing manual workflow; a starter-policy reset
