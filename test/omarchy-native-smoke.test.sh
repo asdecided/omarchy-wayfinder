@@ -2,6 +2,8 @@
 set -euo pipefail
 
 repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+router_version="$(jq -er .router.release "$repository_root/compatibility.json")"
+plugin_version="$(jq -er .version "$repository_root/manifest.json")"
 temporary_dir="$(mktemp -d)"
 trap 'rm -rf -- "$temporary_dir"' EXIT
 
@@ -22,9 +24,9 @@ git -C "$plugin_dir" config user.email "smoke@example.invalid"
 git -C "$plugin_dir" add .
 git -C "$plugin_dir" commit -qm "fixture"
 
-cat > "$router_path" <<'ROUTER'
+cat > "$router_path" <<ROUTER
 #!/usr/bin/env bash
-printf '%s\n' "wayfinder-router 1.0.0"
+printf '%s\n' "wayfinder-router $router_version"
 ROUTER
 chmod 0755 "$router_path"
 router_binary_sha256="$(sha256sum "$router_path" | cut -d ' ' -f 1)"
@@ -33,7 +35,7 @@ cat > "$router_provenance_dir/omarchy-router-install" <<EOF
 schema_version=1
 plugin_id=io.github.asdecided.wayfinder
 role=current
-router_version=1.0.0
+router_version=$router_version
 router_target=x86_64-unknown-linux-gnu
 archive_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 binary_sha256=$router_binary_sha256
@@ -91,15 +93,15 @@ PATH="$mock_bin:$(dirname -- "$router_path"):$PATH" \
   exit 1
 }
 
-jq -e '
+jq -e --arg router_version "$router_version" --arg plugin_version "$plugin_version" '
   .schemaVersion == 1
   and .plugin.id == "io.github.asdecided.wayfinder"
-  and .plugin.version == "0.3.3"
+  and .plugin.version == $plugin_version
   and .plugin.cleanCheckout == true
   and .plugin.enabledBeforeAndAfterRestart == true
   and .plugin.widgetVisible == true
   and .omarchy.shellRestartSurvived == true
-  and .router.version == "1.0.0"
+  and .router.version == $router_version
   and .router.pluginOwned == true
   and .router.healthBeforeAndAfterRestart == true
 ' "$evidence_file" >/dev/null
