@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Wayfinder
+Comment=Set up and manage local and hosted AI routing
+Exec=wayfinder
+Icon=network-workgroup
+Terminal=false
+Categories=Development;Utility;
+StartupWMClass=wayfinder
