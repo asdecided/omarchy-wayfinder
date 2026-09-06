@@ -1,13 +1,11 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QComboBox>
-#include <QDesktopServices>
 #include <QDir>
 #include <QFile>
 #include <QUuid>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QFormLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -21,7 +19,6 @@
 #include <QTabWidget>
 #include <QTextEdit>
 #include <QTimer>
-#include <QUrl>
 #include <QVBoxLayout>
 #include <functional>
 
@@ -36,7 +33,7 @@ class Window : public QMainWindow {
     QByteArray secret;
     QString action;
     QString config = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/wayfinder/wayfinder-router.toml";
-    #ifdef WAYFINDER_TEST
+#ifdef WAYFINDER_TEST
     QString router;
 #else
     const QString router = "/usr/bin/wayfinder-router";
@@ -178,6 +175,7 @@ public:
             run("Install service",{"service","install","--host","127.0.0.1","--port","8088","--config",config});
         });
         for(const auto &verb:QStringList{"start","stop","restart","status"}) button(service,verb.left(1).toUpper()+verb.mid(1)+" service",[this,verb]{run(verb+" service",{"--user",verb,"wayfinder-router.service"},{},"/usr/bin/systemctl");});
+        button(service,"Inspect gateway health",[this]{run("Gateway status",{"service","status","--config",config}); tabs->setCurrentIndex(4);});
         button(service,"Repair provider setup",[this]{if(confirm("Repair interrupted setup? This may restore configuration and restart the standard service. Any existing service definition is backed up.")) setup("repair");});
         button(service,"Disconnect OpenAI",[this]{if(confirm("Remove the setup-owned OpenAI key, restore the local starter and restart the standard service?")) setup("disconnect");});
         service->addStretch();
@@ -207,7 +205,15 @@ public:
         setCentralWidget(central);
         connect(&process,&QProcess::started,this,[this]{if(!secret.isEmpty()) process.write(secret); secret.fill(0);secret.clear();process.closeWriteChannel();});
         connect(&process,&QProcess::readyReadStandardOutput,this,[this]{output+=process.readAllStandardOutput(); if(output.size()>1024*1024) {output.clear();cancel();}});
-        connect(&process,&QProcess::readyReadStandardError,this,[this]{process.readAllStandardError();});
+        connect(&process,&QProcess::readyReadStandardError,this,[this]{
+            const auto bytes=process.readAllStandardError();
+            // Only the read-only native service report is written on stderr.
+            // Never surface stderr from credential-bearing commands.
+            if(action=="Gateway status") {
+                output+=bytes;
+                if(output.size()>1024*1024) {output.clear();cancel();}
+            }
+        });
         connect(&process,&QProcess::errorOccurred,this,[this](QProcess::ProcessError e){if(e==QProcess::FailedToStart) {deadline.stop();secret.fill(0);secret.clear();initializing=false; for(auto*b:actions)b->setEnabled(true);status->setText("Could not start the packaged Router.");}});
         connect(&process,qOverload<int,QProcess::ExitStatus>(&QProcess::finished),this,&Window::complete);
         forceStop.setSingleShot(true); connect(&forceStop,&QTimer::timeout,&process,&QProcess::kill);

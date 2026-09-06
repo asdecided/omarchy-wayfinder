@@ -7,7 +7,7 @@ arch=('x86_64')
 url='https://github.com/asdecided/omarchy-wayfinder'
 license=('Apache-2.0')
 options=('!debug')
-depends=('qt6-base' 'glibc' 'gcc-libs' 'libsecret' 'gnome-keyring' 'systemd' 'git')
+depends=('qt6-base' 'qt6-wayland' 'glibc' 'gcc-libs' 'libsecret' 'gnome-keyring' 'systemd' 'git')
 makedepends=('cmake' 'ninja')
 provides=('wayfinder-router=1.1.0')
 conflicts=('wayfinder-router' 'wayfinder-router-bin')
