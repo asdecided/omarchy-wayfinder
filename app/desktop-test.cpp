@@ -15,6 +15,26 @@ class DesktopTest : public QObject {
         return path;
     }
 private slots:
+    void releasedRouterStarterContract() {
+        const auto router=qEnvironmentVariable("WAYFINDER_TEST_ROUTER");
+        if(router.isEmpty()) QSKIP("Set WAYFINDER_TEST_ROUTER to the released binary");
+        Window w(router);
+        auto env=QProcessEnvironment::systemEnvironment();
+        env.insert("XDG_CONFIG_HOME",directory.path());
+        w.process.setProcessEnvironment(env);
+        QDir().mkpath(directory.filePath("wayfinder"));
+        w.config=directory.filePath("wayfinder/wayfinder-router.toml");
+        w.initializing=true;
+        w.run("Create local starter",{"init","--preset","local","--path",w.config});
+        QTRY_VERIFY_WITH_TIMEOUT(w.stage->text().contains("provider"),10000);
+        QVERIFY(QFileInfo::exists(w.config));
+        QFile policy(w.config); QVERIFY(policy.open(QIODevice::ReadOnly));
+        const auto original=policy.readAll(); policy.close();
+        w.setup("status");
+        QTRY_COMPARE(w.process.state(),QProcess::NotRunning);
+        QVERIFY(policy.open(QIODevice::ReadOnly));
+        QCOMPARE(policy.readAll(),original);
+    }
     void discoversWithoutExposingKeyInArguments() {
         const auto captured=directory.filePath("arguments");
         const auto input=directory.filePath("input");
