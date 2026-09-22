@@ -83,6 +83,13 @@ private slots:
         QCOMPARE(w.action,QString("first"));
         QTRY_COMPARE(w.process.state(),QProcess::NotRunning);
     }
+    void companionDoesNotRequireRouter() {
+        Window w("/nonexistent/wayfinder-router");
+        const auto helper=fake("printf 'Bar companion enabled.\\n'\n");
+        w.run("Enable bar companion",{"enable"},{},helper);
+        QTRY_COMPARE(w.status->text(),QString("Enable bar companion completed."));
+        QCOMPARE(w.details->toPlainText(),QString("Bar companion enabled.\n"));
+    }
 };
 QTEST_MAIN(DesktopTest)
 #include "desktop-test.moc"

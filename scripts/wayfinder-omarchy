@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# User-session integration only. Pacman never writes into a user's home.
+set -euo pipefail
+umask 077
+id=io.github.asdecided.wayfinder
+# Resolve relative to this installed executable, not a caller-controlled env var.
+prefix=$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/.." && pwd)
+source_dir="$prefix/share/wayfinder/omarchy"
+# Omarchy's shell deliberately uses HOME/.config, independent of XDG_CONFIG_HOME.
+plugins_dir="$HOME/.config/omarchy/plugins"
+target="$plugins_dir/$id"
+fail() { printf '%s\n' "$*"; exit 1; }
+owned() { [[ -L $target && $(readlink -- "$target") == "$source_dir" ]]; }
+ipc() { timeout --kill-after=1s 5s omarchy-shell shell "$@"; }
+
+case "${1:-}" in
+  status)
+    if owned; then echo 'The bar companion is linked to the installed app.'
+    elif [[ -e $target || -L $target ]]; then echo 'An existing plugin will be backed up when you enable the app companion.'
+    else echo 'The bar companion has not been added.'; fi
+    exit 0 ;;
+  enable|disable) action=$1 ;;
+  *) fail 'Usage: wayfinder-omarchy enable|disable|status' ;;
+esac
+[[ $# == 1 ]] || fail 'Expected exactly one action.'
+command -v omarchy-shell >/dev/null || fail 'Open this action inside an Omarchy Quattro desktop session.'
+# Verify a live session before moving any existing installation.
+ipc listPlugins | jq -e 'type == "array"' >/dev/null || fail 'The Omarchy shell is unavailable; no files were changed.'
+mkdir -p -- "$plugins_dir"
+exec 9>"$plugins_dir/.wayfinder-integration.lock"
+flock -n 9 || fail 'Another Wayfinder bar action is running.'
+
+if [[ $action == disable ]]; then
+  owned || fail 'This is not the app-owned companion; no files were removed.'
+  result=$(ipc setPluginEnabled "$id" false) || fail 'Could not disable the companion; its link was kept.'
+  [[ $result == ok ]] || fail 'Could not disable the companion; its link was kept.'
+  # Only unlink our exact symlink, never its destination or a legacy checkout.
+  owned || fail 'The companion changed during removal; no files were removed.'
+  rm -- "$target"
+  ipc rescanPlugins >/dev/null || fail 'Companion unlinked. Restart the Omarchy shell to refresh the bar.'
+  echo 'Bar companion removed. Wayfinder and its gateway are unchanged.'
+  exit 0
+fi
+
+[[ -f $source_dir/manifest.json ]] || fail 'The bundled companion is missing. Reinstall the Wayfinder package.'
+command -v omarchy-plugin-validate >/dev/null || fail 'The Omarchy plugin validator is unavailable.'
+omarchy-plugin-validate "$source_dir" || fail 'The bundled companion failed Omarchy validation; no files were changed.'
+
+if ! owned; then
+  if [[ -e $target || -L $target ]]; then
+    # Same-filesystem, hidden backup: dirty checkouts and custom files survive,
+    # and Omarchy cannot accidentally discover the backup as another plugin.
+    backup=$(mktemp -d "$plugins_dir/.wayfinder-before-app.XXXXXXXX")
+    mv -T -- "$target" "$backup/plugin" || fail 'Could not back up the existing plugin.'
+    printf 'Previous plugin saved at: %s/plugin\n' "$backup"
+  else
+    backup=''
+  fi
+  if ! ln -sT -- "$source_dir" "$target"; then
+    if [[ -n $backup ]]; then mv -Tn -- "$backup/plugin" "$target"; fi
+    fail 'Could not link the bundled companion. Any previous plugin backup was preserved.'
+  fi
+fi
+ipc rescanPlugins >/dev/null || fail 'Companion linked. Enable it again when the Omarchy shell is available.'
+# Discovery is asynchronous. Preserve existing placement by passing no override.
+for ((attempt=0; attempt<10; attempt++)); do
+  if ipc listPlugins | jq -e --arg id "$id" 'any(.[]; .id == $id)' >/dev/null; then
+    result=$(ipc enablePlugin "$id" '{}') || fail 'Companion linked, but enablement failed. Retry Enable bar companion.'
+    [[ $result == ok ]] || fail "Companion linked, but Omarchy could not enable it: $result"
+    echo 'Bar companion enabled. Updates come with the Wayfinder package.'
+    exit 0
+  fi
+  sleep 0.05
+done
+fail 'Companion linked but not yet discovered. Retry Enable bar companion.'

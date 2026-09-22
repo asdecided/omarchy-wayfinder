@@ -12,7 +12,7 @@ const [rawCompatibility, rawManifest, installer, workflow, readme, matrix, troub
     read("manifest.json"),
     read("install.sh"),
     read(".github/workflows/ci.yml"),
-    read("README.md"),
+    read("GUIDE.md"),
     read("docs/compatibility.md"),
     read("docs/troubleshooting.md"),
   ]);

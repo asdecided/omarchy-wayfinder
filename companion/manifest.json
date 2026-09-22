@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.asdecided.wayfinder",
+  "name": "Wayfinder",
+  "version": "0.6.0",
+  "author": "Tom Ballard",
+  "license": "Apache-2.0",
+  "description": "Bar companion included with the Wayfinder app: gateway status and quick access.",
+  "kinds": ["service", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {"service": "Service.qml", "barWidget": "BarWidget.qml"},
+  "barWidget": {
+    "displayName": "Wayfinder",
+    "description": "Check gateway reachability and open the Wayfinder app.",
+    "category": "AI",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {},
+    "schema": []
+  }
+}
