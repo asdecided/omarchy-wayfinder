@@ -7,7 +7,7 @@ arch=('x86_64')
 url='https://github.com/asdecided/omarchy-wayfinder'
 license=('Apache-2.0')
 options=('!debug')
-depends=('qt6-base' 'qt6-wayland' 'glibc' 'gcc-libs' 'libsecret' 'gnome-keyring' 'systemd' 'git' 'bash' 'curl' 'util-linux' 'coreutils' 'jq')
+depends=('qt6-base' 'qt6-wayland' 'glibc' 'gcc-libs' 'libsecret' 'gnome-keyring' 'systemd' 'git' 'bash' 'curl' 'util-linux' 'coreutils' 'jq' 'python' 'python-tomlkit')
 makedepends=('cmake' 'ninja')
 provides=('wayfinder-router=1.1.0')
 conflicts=('wayfinder-router' 'wayfinder-router-bin')
@@ -23,6 +23,7 @@ build() {
 }
 check() {
   bash "$srcdir/wayfinder-source/test/companion.test.sh"
+  WAYFINDER_TEST_ROUTER="$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/wayfinder-router" python "$srcdir/wayfinder-source/test/connections_test.py"
   WAYFINDER_TEST_ROUTER="$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/wayfinder-router" ctest --test-dir "$srcdir/build" --output-on-failure
   QT_QPA_PLATFORM=offscreen "$srcdir/build/wayfinder" --smoke-test
   "$srcdir/wayfinder-router-$CARCH-unknown-linux-gnu/wayfinder-router" --version

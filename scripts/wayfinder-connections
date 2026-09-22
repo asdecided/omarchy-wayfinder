@@ -1,0 +1,214 @@
+#!/usr/bin/python3
+"""Desktop connection storage adapter. Rust remains the config validator/router.
+
+JSON requests on stdin keep credentials out of argv. No secrets are returned.
+TOMLKit preserves unrelated policy, comments and provider settings.
+"""
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import signal
+import subprocess
+import sys
+import tempfile
+import uuid
+from urllib.parse import urlsplit
+import tomlkit
+
+APP = "io.github.asdecided.wayfinder"
+ROUTER = "/usr/bin/wayfinder-router"
+SECRET = "/usr/bin/secret-tool"
+LIMIT = 1024 * 1024
+
+
+def read(path):
+    info = path.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_size > LIMIT:
+        raise ValueError("Configuration must be a regular, user-owned file up to 1 MiB.")
+    return path.read_bytes()
+
+
+def revision(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def invoke(args, payload=b""):
+    # Captured stderr is never surfaced: providers may include credentials in errors.
+    process = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL, start_new_session=True)
+    try:
+        output, _ = process.communicate(payload, timeout=30)
+        if len(output) > LIMIT:
+            raise ValueError("The Router response exceeded its limit.")
+        return subprocess.CompletedProcess(args, process.returncode, output)
+    except BaseException:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.communicate()
+        raise
+
+
+def key_command(route):
+    return f"{SECRET} lookup application {APP} connection {route}"
+
+
+def safe_route(route):
+    if not isinstance(route, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", route):
+        raise ValueError("Route IDs need 1–64 letters, numbers, underscores or hyphens.")
+    return route
+
+
+def validate(path):
+    result = invoke([ROUTER, "doctor", "--config", str(path), "--json"])
+    try:
+        report = json.loads(result.stdout)
+    except (ValueError, UnicodeError):
+        raise ValueError("The packaged Router could not validate this configuration.")
+    if not any(c.get("id") == "config" and c.get("status") == "pass"
+               for c in report.get("checks", [])):
+        raise ValueError("The Router rejected this configuration. Nothing was saved.")
+
+
+def handle(path, request):
+    original = read(path)
+    document = tomlkit.parse(original.decode())
+    models = document.get("gateway", {}).get("models", {})
+    if request["action"] == "list":
+        return {"ok": True, "revision": revision(original),
+                "offline": document.get("gateway", {}).get("offline", False),
+                "connections": [{"id": name, "provider": model.get("provider", "openai-compatible"),
+                                 "endpoint": model.get("base_url", ""), "model": model.get("model", ""),
+                                 "owned_key": model.get("api_key_cmd") == key_command(name)}
+                                for name, model in models.items()]}
+    if request.get("revision") != revision(original):
+        raise ValueError("Configuration changed. Reload connections before saving.")
+    if "gateway" not in document:
+        document["gateway"] = tomlkit.table()
+    if "models" not in document["gateway"]:
+        document["gateway"]["models"] = tomlkit.table()
+    models = document["gateway"]["models"]
+    action = request["action"]
+    route = safe_route(request.get("id", "")) if action != "offline" else ""
+    old = models.get(route, {})
+    owned = old.get("api_key_cmd") == key_command(route)
+    if action == "forget-key":
+        if not owned:
+            raise ValueError("This connection does not use an app-owned key. Its credential was left unchanged.")
+        result = invoke([SECRET, "clear", "application", APP, "connection", route])
+        if result.returncode:
+            raise ValueError("Credential removal was not confirmed. Unlock your keyring and retry.")
+        return {"ok": True, "message": "Saved key removed. Restart the gateway to discard its cached credential."}
+    key = request.get("key", "")
+    if not isinstance(key, str) or len(key) > 4096 or "\n" in key or "\r" in key:
+        raise ValueError("Invalid API key.")
+    if action == "save":
+        endpoint = request.get("endpoint", "")
+        url = urlsplit(endpoint)
+        if url.username or url.password or url.query or url.fragment or not url.hostname:
+            raise ValueError("Use an API endpoint without credentials, query or fragment.")
+        if url.scheme != "https" and not (url.scheme == "http" and url.hostname in ("localhost", "127.0.0.1", "::1")):
+            raise ValueError("Hosted endpoints require HTTPS; local servers may use loopback HTTP.")
+        provider = request.get("provider")
+        if provider not in ("openai-compatible", "anthropic"):
+            raise ValueError("Unsupported provider type.")
+        model = request.get("model", "")
+        if not isinstance(model, str) or not model or len(model) > 256 or any(ord(c) < 32 for c in model):
+            raise ValueError("Enter a model name up to 256 characters.")
+        # Credential references must not silently follow an endpoint change.
+        if old and endpoint != old.get("base_url", "") and (owned or old.get("api_key_env") or old.get("api_key_cmd")):
+            raise ValueError("Create a new route to change a credential-bearing endpoint.")
+        entry = models.get(route, tomlkit.table())
+        entry["provider"] = provider
+        entry["base_url"] = endpoint
+        entry["model"] = model
+        if key:
+            entry["api_key_env"] = "WAYFINDER_CONNECTION_" + hashlib.sha256(route.encode()).hexdigest()[:32].upper()
+            entry["api_key_cmd"] = key_command(route)
+        models[route] = entry
+    elif action == "remove":
+        if route not in models:
+            raise ValueError("Connection no longer exists.")
+        routing = document.get("routing", {})
+        referenced = [t.get("model") for t in routing.get("tiers", [])]
+        referenced += routing.get("classifier", {}).get("models", [])
+        if not routing.get("tiers") and not routing.get("classifier"):
+            referenced += ["local", "cloud"]
+        if route in referenced:
+            raise ValueError("This connection is used by routing. Change the routing policy before removing it.")
+        del models[route]
+    elif action == "offline":
+        if not isinstance(request.get("offline"), bool):
+            raise ValueError("Offline mode must be true or false.")
+        document["gateway"]["offline"] = request["offline"]
+    else:
+        raise ValueError("Unsupported connection action.")
+    updated = tomlkit.dumps(document).encode()
+    if len(updated) > LIMIT:
+        raise ValueError("Configuration is too large.")
+    fd, name = tempfile.mkstemp(prefix=".wayfinder-connection-", suffix=".toml", dir=path.parent)
+    stage = Path(name)
+    try:
+        with os.fdopen(fd, "wb") as out:
+            out.write(updated)
+            out.flush()
+            os.fsync(out.fileno())
+        validate(stage)
+        if read(path) != original:
+            raise ValueError("Configuration changed during validation. Reload before saving.")
+        # Create the backup before writing credentials or replacing configuration.
+        backup = path.with_name(path.name + ".before-connections-" + str(uuid.uuid4()))
+        with backup.open("xb") as out:
+            os.chmod(backup, 0o600)
+            out.write(original)
+        if action == "save" and key:
+            if invoke([SECRET, "store", "--label=Wayfinder " + route,
+                       "application", APP, "connection", route], key.encode()).returncode:
+                raise ValueError("Could not store the API key. Unlock your desktop keyring and retry.")
+        if read(path) != original:
+            raise ValueError("Configuration changed. The key may have been stored; reload before retrying.")
+        os.replace(stage, path)
+        message = "Saved. Restart the gateway to apply this change. A configuration backup was kept."
+        if action == "remove" and owned:
+            if invoke([SECRET, "clear", "application", APP, "connection", route]).returncode:
+                message = "Connection removed, but credential cleanup was not confirmed. Unlock the keyring and remove its Wayfinder item."
+        return {"ok": True, "message": message}
+    finally:
+        stage.unlink(missing_ok=True)
+
+
+def main():
+    os.umask(0o077)
+    def interrupted(_signal, _frame):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, interrupted)
+    if len(sys.argv) != 3 or sys.argv[1] != "--config":
+        raise ValueError("Usage: wayfinder-connections --config PATH")
+    payload = sys.stdin.buffer.read(65537)
+    if len(payload) > 65536:
+        raise ValueError("Request is too large.")
+    request = json.loads(payload)
+    path = Path(sys.argv[2])
+    lock_path = path.parent / ".connections.lock"
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        print(json.dumps(handle(path, request)))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except ValueError as error:
+        # Only our own errors are displayed; TOML parser exceptions can contain secrets.
+        message = str(error) if type(error) is ValueError else "Invalid configuration or request."
+        print(json.dumps({"ok": False, "error": message}))
+        sys.exit(1)
+    except (Exception, KeyboardInterrupt):
+        print(json.dumps({"ok": False, "error": "Could not update connections. Check the configuration, packaged Router and keyring; then reload."}))
+        sys.exit(1)

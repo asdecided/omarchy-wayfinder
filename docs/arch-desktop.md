@@ -2,7 +2,8 @@
 
 The `wayfinder` package owns the desktop app, Router 1.1.0, launcher, service
 unit template and Omarchy bar companion. The app is a Qt adapter over the Rust
-Router; credentials, routing decisions and policy writes stay with the Router.
+Router; routing decisions and validation stay with the Router. The connection adapter
+stages comment-preserving edits and stores keys through desktop Secret Service.
 The package currently targets x86_64 Arch Linux. ARM packaging remains deferred.
 
 ## Release status
@@ -95,3 +96,5 @@ for the exact checks and outstanding live acceptance.
 After the source release and XPS acceptance, contribute the checked release
 PKGBUILD to `omacom/omarchy-pkgs` as `wayfinder`, initially on edge. A companion
 marketplace listing is not required. No official acceptance is claimed here.
+
+See [control-centre development handoff](control-centre.md) for routing, connections, chat and live desktop checks.
