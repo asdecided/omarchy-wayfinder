@@ -1,10 +1,10 @@
 name: Arch desktop package
 on:
   pull_request:
-    paths: ['app/**', 'packaging/arch/**', '.github/workflows/arch-app.yml']
+    paths: ['app/**', 'companion/**', 'scripts/wayfinder-omarchy', 'test/companion*', 'packaging/arch/**', '.github/workflows/arch-app.yml']
   push:
     branches: [main]
-    paths: ['app/**', 'packaging/arch/**', '.github/workflows/arch-app.yml']
+    paths: ['app/**', 'companion/**', 'scripts/wayfinder-omarchy', 'test/companion*', 'packaging/arch/**', '.github/workflows/arch-app.yml']
   release:
     types: [published]
 defaults:
@@ -19,7 +19,7 @@ jobs:
     container: archlinux:base
     steps:
       - name: Install build dependencies
-        run: pacman -Syu --noconfirm base-devel cmake ninja qt6-base qt6-wayland libsecret gnome-keyring git
+        run: pacman -Syu --noconfirm base-devel cmake ninja qt6-base qt6-wayland libsecret gnome-keyring git jq desktop-file-utils
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -46,6 +46,10 @@ jobs:
           test "$(/usr/bin/wayfinder-router --version)" = 'wayfinder-router 1.1.0'
           su builder -c 'QT_QPA_PLATFORM=offscreen /usr/bin/wayfinder --smoke-test'
           test -f /usr/share/applications/wayfinder.desktop
+          desktop-file-validate /usr/share/applications/wayfinder.desktop
+          test -x /usr/bin/wayfinder-omarchy
+          test -f /usr/share/wayfinder/omarchy/manifest.json
+          test ! -e /home/builder/.config/omarchy/plugins/io.github.asdecided.wayfinder
           systemd-analyze verify /usr/lib/systemd/user/wayfinder-router.service
           su builder -c 'mkdir -p ~/.config/wayfinder; /usr/bin/wayfinder-router init --preset local --path ~/.config/wayfinder/wayfinder-router.toml'
           sha256sum /home/builder/.config/wayfinder/wayfinder-router.toml > /tmp/config.sha256
@@ -55,6 +59,8 @@ jobs:
           pacman -R --noconfirm wayfinder
           test ! -e /usr/bin/wayfinder
           test ! -e /usr/bin/wayfinder-router
+          test ! -e /usr/bin/wayfinder-omarchy
+          test ! -e /usr/share/wayfinder/omarchy
           sha256sum -c /tmp/config.sha256
       - name: Prepare downloads
         run: |

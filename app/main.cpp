@@ -67,7 +67,7 @@ class Window : public QMainWindow {
     }
     void run(const QString &name, const QStringList &args, QByteArray input = {}, const QString &program = {}) {
         if (process.state() != QProcess::NotRunning) { input.fill(0); return; }
-        if (!QFileInfo::exists(router)) {
+        if (program.isEmpty() && !QFileInfo::exists(router)) {
             initializing=false; input.fill(0); status->setText("The packaged Router is missing. Reinstall Wayfinder with your package manager."); return;
         }
         action=name; output.clear(); secret=input; input.fill(0); cancelling=false;
@@ -201,6 +201,19 @@ public:
         auto *diag=page("Diagnostics","Inspect the installed Router and configuration. Updates and package removal use the normal Arch package manager. Close this window before updating, then restart the service.");
         button(diag,"Check configuration",[this]{run("Diagnostics",{"doctor","--config",config,"--json"});});
         details=new QTextEdit; details->setReadOnly(true); diag->addWidget(details);
+        auto *bar=page("Omarchy bar","The optional bar companion comes with this app. It shows gateway status and opens Wayfinder. An existing plugin is backed up when you enable it; your routing configuration and credentials are preserved.");
+        button(bar,"Enable bar companion",[this]{
+            if(confirm("Enable the bar companion included with Wayfinder? Any existing Wayfinder plugin directory will be moved to a recoverable backup. Your bar placement is retained.")) {
+                run("Enable bar companion",{"enable"},{},"/usr/bin/wayfinder-omarchy"); tabs->setCurrentIndex(4);
+            }
+        });
+        button(bar,"Remove bar companion",[this]{
+            run("Remove bar companion",{"disable"},{},"/usr/bin/wayfinder-omarchy"); tabs->setCurrentIndex(4);
+        });
+        button(bar,"Inspect bar integration",[this]{
+            run("Bar integration",{"status"},{},"/usr/bin/wayfinder-omarchy"); tabs->setCurrentIndex(4);
+        });
+        bar->addStretch();
         auto *cancelButton=new QPushButton("Cancel current action"); layout->addWidget(cancelButton); connect(cancelButton,&QPushButton::clicked,this,[this]{cancel();});
         setCentralWidget(central);
         connect(&process,&QProcess::started,this,[this]{if(!secret.isEmpty()) process.write(secret); secret.fill(0);secret.clear();process.closeWriteChannel();});
