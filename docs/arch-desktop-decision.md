@@ -37,3 +37,12 @@ Reviewed current Omarchy Quattro source:
 Relevant contracts: `bin/omarchy-plugin-catalog`, `bin/omarchy-plugin-validate`,
 `bin/omarchy-plugin-remove`, `shell/services/PluginRegistry.qml` and
 `shell/shell.qml` (rescan and enable IPC). Native desktop acceptance is separate.
+
+## Control-centre connection adapter
+
+The richer Linux connection editor uses an installed Python/TOMLKit adapter for
+comment-preserving connection CRUD and Secret Service key storage. Rust validates
+each staged candidate before replacement and retains all scoring/request authority.
+This deliberately extends the earlier CLI-only UI boundary; Router 1.1.0 does not
+expose a native provider CRUD command. Routing edits continue through the existing
+native Rust contract. See control-centre.md for transaction and rollback limits.

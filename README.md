@@ -7,7 +7,8 @@
 **One local endpoint for your coding agents.**
 
 Wayfinder connects your coding agents to a shared AI router. Open the app to
-connect a provider, choose a model and manage your projects. Close the window
+manage connections, tune routing and chat through the gateway. Inspect recent
+decisions, then connect your coding agents and projects. Close the window
 when you're done: the background service keeps routing requests.
 
 The optional Omarchy bar companion comes with the app. It shows whether the
@@ -29,6 +30,19 @@ connection instructions. Your desktop keyring must be unlocked.
 
 To add the bar button, choose **Omarchy bar → Enable bar companion** in the app.
 Right-click the button to refresh its status; click to open Wayfinder.
+
+## Your control centre
+
+- **Overview:** gateway status, configured models, recent decisions and priced savings.
+- **Connections:** hosted APIs, local model servers and desktop-keyring credentials.
+- **Routing:** thresholds, model tiers, feature weights and private prompt previews.
+- **Chat:** conversations through your Router, with routing receipts and optional saved history.
+
+The interface follows your Omarchy colours. ChatGPT subscription sign-in is not
+available in this Linux build. See the [development handoff](docs/control-centre.md)
+for current behavior and the remaining XPS checks.
+
+<!-- Real app screenshot pending from Tom; no mockup is presented as an XPS capture. -->
 
 ## Already using the plugin?
 
