@@ -9,8 +9,8 @@ Item {
 
   property var shell: null
   property var manifest: null
-  readonly property string pluginSourceDir: manifest && manifest.__sourceDir
-    ? String(manifest.__sourceDir) : ""
+  readonly property string pluginSourceDir: Model.pluginSourceDirectory(
+    manifest, String(Qt.resolvedUrl(".")))
 
   property string endpoint: Model.DEFAULT_ENDPOINT
   property int refreshIntervalSec: 15

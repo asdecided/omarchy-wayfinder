@@ -1,5 +1,22 @@
 .pragma library
 
+// Older hosts omit __sourceDir from injected third-party manifests.
+function pluginSourceDirectory(manifest, resolvedUrl) {
+  var injected = manifest && manifest.__sourceDir
+  if (typeof injected === "string" && injected.charAt(0) === "/"
+      && injected.indexOf("\u0000") === -1)
+    return injected.replace(/\/+$/, "") || "/"
+  var url = String(resolvedUrl || "")
+  if (url.indexOf("file:///") !== 0 || /[?#]/.test(url)) return ""
+  try {
+    var directory = decodeURIComponent(url.substring(7))
+    if (directory.indexOf("\u0000") !== -1) return ""
+    return directory.replace(/\/+$/, "") || "/"
+  } catch (error) {
+    return ""
+  }
+}
+
 var DEFAULT_ENDPOINT = "http://127.0.0.1:8088"
 
 function normalizedEndpoint(value) {

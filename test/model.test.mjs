@@ -11,6 +11,14 @@ const model = { Date, JSON, Math, Number, String, Array, Object, RegExp, isFinit
 vm.createContext(model);
 vm.runInContext(source, model, { filename: "Model.js" });
 
+assert.equal(model.pluginSourceDirectory({ __sourceDir: "/opt/wayfinder/" }, "file:///fallback/"), "/opt/wayfinder");
+assert.equal(model.pluginSourceDirectory(null, "file:///home/tom/My%20Plugins/Wayfinder/"), "/home/tom/My Plugins/Wayfinder");
+assert.equal(model.pluginSourceDirectory({}, "file:///tmp/caf%C3%A9%25/"), "/tmp/café%");
+assert.equal(model.pluginSourceDirectory({ __sourceDir: "relative" }, "file:///fallback/"), "/fallback");
+for (const url of ["", "https://example.com/plugin/", "file://remote/plugin/", "file:///bad%ZZ/", "file:///bad%00/", "file:///tmp/?query"]) {
+  assert.equal(model.pluginSourceDirectory({}, url), "");
+}
+
 assert.equal(model.normalizedEndpoint("127.0.0.1:8088/"), "http://127.0.0.1:8088");
 assert.equal(model.normalizedEndpoint(""), "http://127.0.0.1:8088");
 assert.equal(model.boundedInteger("2", 15, 5, 300), 5);
