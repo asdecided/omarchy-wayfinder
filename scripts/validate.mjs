@@ -55,7 +55,10 @@ const nativeSmokeStat = await stat(path.join(root, "scripts/omarchy-native-smoke
 assert.notEqual(installerStat.mode & 0o111, 0, "install.sh must remain directly executable");
 assert.notEqual(nativeSmokeStat.mode & 0o111, 0, "native smoke must remain directly executable");
 assert.ok(service.includes("wayfinder-router.service"));
-assert.ok(service.includes("manifest.__sourceDir"), "setup must use Omarchy's installed source path");
+assert.match(service, /Model\.pluginSourceDirectory\(\s*manifest,\s*String\(Qt\.resolvedUrl\("\."\)\)\)/,
+  "setup must pass host metadata and the local QML URL to the source-directory resolver");
+assert.ok(model.includes("manifest.__sourceDir"),
+  "the source-directory resolver must retain Omarchy's installed source path");
 assert.ok(service.includes('[pluginSourceDir + "/install.sh", "--bootstrap-router"]'),
   "setup must invoke the bounded Router bootstrap without shell interpolation");
 assert.ok(service.includes("/healthz"));
